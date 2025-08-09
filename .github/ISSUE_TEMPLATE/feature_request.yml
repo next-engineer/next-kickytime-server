@@ -36,9 +36,9 @@ body:
     attributes:
       label: "해야할 일"
       options:
-        - label: "작업 1"
-        - label: "작업 2"
-        - label: "작업 3"
+        - label: "기능 상세 요구사항 정의"
+        - label: "기능 구현"
+        - label: "문서/가이드 업데이트"
 
   - type: textarea
     id: done

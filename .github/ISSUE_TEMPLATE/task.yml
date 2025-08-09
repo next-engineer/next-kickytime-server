@@ -31,14 +31,20 @@ body:
     validations:
       required: true
 
-  - type: checkboxes
+  - type: textarea
     id: tasks
     attributes:
-      label: "해야할 일"
-      options:
-        - label: "작업 1"
-        - label: "작업 2"
-        - label: "작업 3"
+      label: "해야할 일 (자유 입력)"
+      description: "GitHub Task List 형식으로 작성해 주세요. 예: `- [ ] 항목`"
+      placeholder: |
+        - [ ] 요구사항 정리
+        - [ ] UI/UX 설계
+        - [ ] 기능 구현
+        - [ ] 테스트 및 검증
+        - [ ] 문서 업데이트
+      render: markdown
+    validations:
+      required: false
 
   - type: textarea
     id: done
