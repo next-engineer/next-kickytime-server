@@ -1,0 +1,60 @@
+name: "📝 문서 변경 요청"
+description: "문서 수정 또는 개선 사항을 요청합니다."
+title: "[DOCS] "
+labels:
+  - documentation
+assignees:
+  - your-github-username
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 문서 변경 요청서
+        문서 변경이나 개선이 필요한 경우 아래 양식을 작성해 주세요.
+
+  - type: textarea
+    id: background
+    attributes:
+      label: "배경"
+      description: "문서 변경이 필요한 이유를 작성해주세요."
+      placeholder: "예: README에 API 예제 코드가 최신 버전과 맞지 않음"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: "상세 설명"
+      description: "변경이 필요한 문서와 위치, 개선 방향을 구체적으로 작성해주세요."
+      placeholder: "예: /docs/api.md 파일의 로그인 API 예시를 최신 버전으로 업데이트"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: tasks
+    attributes:
+      label: "해야할 일"
+      options:
+        - label: "문서 수정"
+        - label: "문서 리뷰 반영"
+        - label: "문서 배포/업데이트"
+
+  - type: textarea
+    id: done
+    attributes:
+      label: "완료 조건"
+      description: "완료되었다고 판단할 수 있는 기준을 작성해주세요."
+      placeholder: "예: 최신 API 스펙이 문서에 반영되고 배포 완료"
+
+  - type: textarea
+    id: reference
+    attributes:
+      label: "참고 자료"
+      description: "관련 자료나 레퍼런스 링크를 추가해주세요."
+
+  - type: input
+    id: reference-issue
+    attributes:
+      label: "관련 이슈 번호"
+      placeholder: "#123"

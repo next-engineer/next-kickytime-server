@@ -1,0 +1,60 @@
+name: "🛠 작업(Task)"
+description: "구체적인 작업 또는 할 일을 등록합니다."
+title: "[TASK] "
+labels:
+  - task
+assignees:
+  - your-github-username
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 작업 요청서
+        필요한 작업이 있다면 아래 양식을 작성해 주세요.
+
+  - type: textarea
+    id: background
+    attributes:
+      label: "배경"
+      description: "이 작업이 필요한 이유를 간단하게 작성해주세요."
+      placeholder: "예: 배포 자동화 스크립트 수정 필요"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: "상세 설명"
+      description: "구체적으로 무엇을 해야 하는지 작성해주세요."
+      placeholder: "예: GitHub Actions 워크플로우의 배포 단계 수정"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: tasks
+    attributes:
+      label: "해야할 일"
+      options:
+        - label: "작업 1"
+        - label: "작업 2"
+        - label: "작업 3"
+
+  - type: textarea
+    id: done
+    attributes:
+      label: "완료 조건"
+      description: "완료되었다고 판단할 수 있는 기준을 작성해주세요."
+      placeholder: "예: 수정된 스크립트로 배포가 정상적으로 동작"
+
+  - type: textarea
+    id: reference
+    attributes:
+      label: "참고 자료"
+      description: "관련 자료나 레퍼런스 링크를 추가해주세요."
+
+  - type: input
+    id: reference-issue
+    attributes:
+      label: "관련 이슈 번호"
+      placeholder: "#123"

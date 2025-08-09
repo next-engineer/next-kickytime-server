@@ -1,0 +1,84 @@
+name: "🐛 버그 보고"
+description: "개선에 도움이 되도록 버그를 신고합니다."
+title: "[BUG] "
+labels:
+  - bug
+assignees:
+  - your-github-username
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 버그 보고서
+        버그를 발견하신 경우, 아래 양식에 맞춰 작성해 주세요.
+
+  - type: textarea
+    id: background
+    attributes:
+      label: "배경"
+      description: "버그를 발견한 배경이나 상황을 적어주세요."
+      placeholder: "예: 특정 페이지 접속 시 오류 발생"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: "상세 설명"
+      description: "어떤 문제가 발생했는지 간결하고 명확하게 설명해주세요."
+      placeholder: "에러 메시지, 동작 불일치 등"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: "재현 방법"
+      description: "버그를 재현하기 위한 단계별 절차를 작성해주세요."
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "예상했던 동작"
+      description: "기대했던 정상 동작을 설명해주세요."
+      placeholder: "예: 버튼 클릭 시 팝업창이 열림"
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "스크린샷/로그"
+      description: "가능하다면 스크린샷 또는 관련 로그를 첨부해주세요."
+
+  - type: checkboxes
+    id: todo
+    attributes:
+      label: "해야할 일"
+      options:
+        - label: "원인 분석"
+        - label: "코드 수정"
+        - label: "테스트 작성 및 실행"
+
+  - type: textarea
+    id: done
+    attributes:
+      label: "완료 조건"
+      description: "완료되었다고 판단할 수 있는 기준을 작성해주세요."
+
+  - type: textarea
+    id: reference
+    attributes:
+      label: "참고 자료"
+      description: "관련 자료나 레퍼런스 링크를 추가해주세요."
+
+  - type: input
+    id: reference-issue
+    attributes:
+      label: "관련 이슈 번호"
+      placeholder: "#123"
