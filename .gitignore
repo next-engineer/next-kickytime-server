@@ -1,6 +1,7 @@
 # Created by https://www.toptal.com/developers/gitignore/api/java,intellij,node,git,windows,macos,venv,visualstudiocode,eclipse
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,intellij,node,git,windows,macos,venv,visualstudiocode,eclipse
 
+*.jar
 ### Gradle ###
 .gradle
 **/build/
@@ -212,7 +213,6 @@ fabric.properties
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.nar
 *.ear
