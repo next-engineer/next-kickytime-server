@@ -1,0 +1,26 @@
+{
+  "name": "01_next-kickytime-server",
+  "version": "1.0.0",
+  "description": "Spring Boot-based backend for a futsal match-making platform with AWS Cognito authentication, match management APIs, and PostgreSQL integration, deployed on AWS ECS &amp; EC2 with CI/CD.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/next-engineer/next-kickytime-server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/next-engineer/next-kickytime-server/issues"
+  },
+  "homepage": "https://github.com/next-engineer/next-kickytime-server#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^8.0.3"
+  }
+}
