@@ -5,16 +5,9 @@
 ### Gradle ###
 .gradle
 **/build/
-!src/**/build/
 
 # Ignore Gradle GUI config
 gradle-app.setting
-
-# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
-!gradle-wrapper.jar
-
-# Avoid ignore Gradle wrappper properties
-!gradle-wrapper.properties
 
 # Cache of project
 .gradletasknamecache
@@ -412,11 +405,6 @@ pip-selfcheck.json
 
 ### VisualStudioCode ###
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
 
 # Local History for Visual Studio Code
 .history/
@@ -454,5 +442,19 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+
+!src/**/build/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+
+# Avoid ignore Gradle wrappper properties
+!gradle-wrapper.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/java,intellij,node,git,windows,macos,venv,visualstudiocode,eclipse
