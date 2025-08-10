@@ -1,7 +1,8 @@
 package com.kickytime.kickytime.api.user.entity;
 
 public enum RoleEnum {
-    USER("사용자"), ADMIN("관리자");
+    USER("사용자"),
+    ADMIN("관리자");
 
     private String description;
 

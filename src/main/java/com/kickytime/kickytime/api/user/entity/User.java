@@ -1,8 +1,9 @@
 package com.kickytime.kickytime.api.user.entity;
 
+import org.springframework.data.annotation.CreatedDate;
+
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
 
 @Entity
 @Table(name = "users")
