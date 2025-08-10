@@ -1,13 +1,13 @@
-package com.kickytime.kickytime.api.user.entity;
+package com.nextcloudlab.kickytime.user.entity;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import org.springframework.data.annotation.CreatedDate;
-
-import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name = "users")
@@ -51,6 +51,13 @@ public class User {
     private RankEnum rank;
 
     @CreatedDate
-    @Column(name = "created_at",updatable = false)
+    @Column(name = "created_at", updatable = false)
     private java.time.LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.role == null) this.role = RoleEnum.USER;
+        if (this.rank == null) this.rank = RankEnum.BEGINNER;
+        if (this.createdAt == null) this.createdAt = java.time.LocalDateTime.now();
+    }
 }

@@ -1,4 +1,4 @@
-package com.kickytime.kickytime.api.user.entity;
+package com.nextcloudlab.kickytime.user.entity;
 
 public enum RankEnum {
     BEGINNER("입문자"),

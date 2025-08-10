@@ -1,4 +1,4 @@
-package com.kickytime.kickytime.api.user.entity;
+package com.nextcloudlab.kickytime.user.entity;
 
 public enum RoleEnum {
     USER("사용자"),

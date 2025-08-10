@@ -1,11 +1,11 @@
-package com.kickytime.kickytime.api.user.repository;
+package com.nextcloudlab.kickytime.user.repository;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.kickytime.kickytime.api.user.entity.User;
+import com.nextcloudlab.kickytime.user.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
