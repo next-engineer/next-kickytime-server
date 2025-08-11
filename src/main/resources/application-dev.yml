@@ -12,3 +12,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
+
+app:
+  cors:
+    allowed-origins: "http://localhost:5173"
