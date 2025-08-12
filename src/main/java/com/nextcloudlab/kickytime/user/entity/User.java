@@ -5,6 +5,7 @@ import org.springframework.data.annotation.CreatedDate;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -35,14 +36,13 @@ public class User {
     @Column(nullable = false, unique = true, name = "cognito_sub")
     private String cognitoSub;
 
-    @NotBlank
     @Column(nullable = false, name = "email_verified")
     private boolean emailVerified;
 
     @Column(nullable = true)
     private String password;
 
-    @NotBlank
+    @NotNull
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private RoleEnum role;
