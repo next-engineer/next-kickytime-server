@@ -3,14 +3,14 @@ package com.nextcloudlab.kickytime.match.entity;
 import com.nextcloudlab.kickytime.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "match_participants",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"match_id", "user_id"})
+                @UniqueConstraint(
+                        name = "uk_match_user",
+                        columnNames = {"match_id", "user_id"}
+                )
         })
 @Getter
 @Setter
