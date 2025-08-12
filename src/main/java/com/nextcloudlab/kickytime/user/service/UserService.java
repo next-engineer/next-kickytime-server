@@ -1,10 +1,11 @@
 package com.nextcloudlab.kickytime.user.service;
 
-import com.nextcloudlab.kickytime.user.entity.User;
-import com.nextcloudlab.kickytime.user.repository.UserRepository;
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import com.nextcloudlab.kickytime.user.entity.User;
+import com.nextcloudlab.kickytime.user.repository.UserRepository;
 
 @Service
 public class UserService {
@@ -18,7 +19,7 @@ public class UserService {
     public User findOrCreateUser(String cognitoSub, String email, String nickname) {
         Optional<User> existingUser = userRepository.findByCognitoSub(cognitoSub);
 
-        if(existingUser.isPresent()) {
+        if (existingUser.isPresent()) {
             return existingUser.get();
         } else {
             User newUser = new User();
