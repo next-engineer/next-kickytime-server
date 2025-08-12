@@ -2,5 +2,10 @@ spring:
   profiles:
     active: dev # 기본 실행 환경
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xI18xw5er/.well-known/jwks.json
+
 server:
   port: 8080
