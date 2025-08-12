@@ -31,9 +31,8 @@ jobs:
       - name: Gradle 실행 환경 최적화 + 캐시
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
       - name: Build (includes spotless/checkstyle/test via `check` dependency)
-        run: |
-          if ! ./gradlew --no-daemon build; then
-            echo "Gradle build failed"
-            exit 1
-          fi
+        run: ./gradlew --no-daemon build
