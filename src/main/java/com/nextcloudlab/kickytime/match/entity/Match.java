@@ -2,9 +2,9 @@ package com.nextcloudlab.kickytime.match.entity;
 
 import java.time.LocalDateTime;
 
-import com.nextcloudlab.kickytime.common.entity.BaseEntity;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import com.nextcloudlab.kickytime.common.entity.BaseEntity;
 import com.nextcloudlab.kickytime.user.entity.User;
 
 import jakarta.persistence.*;

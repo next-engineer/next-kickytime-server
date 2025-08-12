@@ -1,16 +1,17 @@
 package com.nextcloudlab.kickytime.match.entity;
 
 import com.nextcloudlab.kickytime.user.entity.User;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "match_participants",
+@Table(
+        name = "match_participants",
         uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_match_user",
-                        columnNames = {"match_id", "user_id"}
-                )
+            @UniqueConstraint(
+                    name = "uk_match_user",
+                    columnNames = {"match_id", "user_id"})
         })
 @Getter
 @Setter
@@ -38,5 +39,4 @@ public class MatchParticipant {
     protected void onCreate() {
         joinedAt = java.time.LocalDateTime.now();
     }
-
 }

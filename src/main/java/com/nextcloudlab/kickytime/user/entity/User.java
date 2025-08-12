@@ -54,7 +54,6 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private RankEnum rank;
 
-
     @PrePersist
     public void prePersist() {
         if (this.role == null) this.role = RoleEnum.USER;
