@@ -42,7 +42,6 @@ body:
         - [ ] 기능 구현
         - [ ] 테스트 및 검증
         - [ ] 문서 업데이트
-      render: markdown
     validations:
       required: false
 

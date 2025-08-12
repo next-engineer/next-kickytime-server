@@ -1,7 +1,6 @@
 package com.nextcloudlab.kickytime.user.entity;
 
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -11,7 +10,6 @@ import lombok.*;
 
 @Entity
 @Table(name = "users")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,7 +18,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    private Long id;
 
     @Email
     @NotBlank
@@ -33,12 +31,18 @@ public class User {
     @Column(nullable = false, length = 50)
     private String nickname;
 
+    @NotBlank
     @Column(nullable = false, unique = true, name = "cognito_sub")
     private String cognitoSub;
 
+    @NotBlank
     @Column(nullable = false, name = "email_verified")
     private boolean emailVerified;
 
+    @Column(nullable = true)
+    private String password;
+
+    @NotBlank
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private RoleEnum role;
@@ -58,6 +62,7 @@ public class User {
     public void prePersist() {
         if (this.role == null) this.role = RoleEnum.USER;
         if (this.rank == null) this.rank = RankEnum.BEGINNER;
+        if (this.imageUrl == null) this.imageUrl = "/images/default-profile.png";
         if (this.createdAt == null) this.createdAt = java.time.LocalDateTime.now();
     }
 }
