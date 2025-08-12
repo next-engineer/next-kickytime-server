@@ -1,6 +1,6 @@
 package com.nextcloudlab.kickytime.user.entity;
 
-import org.springframework.data.annotation.CreatedDate;
+import com.nextcloudlab.kickytime.common.entity.BaseEntity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -15,7 +15,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,15 +54,11 @@ public class User {
     @Enumerated(EnumType.STRING)
     private RankEnum rank;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private java.time.LocalDateTime createdAt;
 
     @PrePersist
     public void prePersist() {
         if (this.role == null) this.role = RoleEnum.USER;
         if (this.rank == null) this.rank = RankEnum.BEGINNER;
         if (this.imageUrl == null) this.imageUrl = "/images/default-profile.png";
-        if (this.createdAt == null) this.createdAt = java.time.LocalDateTime.now();
     }
 }

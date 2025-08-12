@@ -2,8 +2,7 @@ package com.nextcloudlab.kickytime.match.entity;
 
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import com.nextcloudlab.kickytime.common.entity.BaseEntity;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.nextcloudlab.kickytime.user.entity.User;
@@ -22,7 +21,7 @@ import lombok.Setter;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "matches")
-public class Match {
+public class Match extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -44,14 +43,6 @@ public class Match {
     @Max(value = 22, message = "최대 22명까지 가능합니다.")
     @Column(nullable = false)
     private Integer maxPlayers;
-
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
