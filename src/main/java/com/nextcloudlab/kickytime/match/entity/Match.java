@@ -1,15 +1,14 @@
 package com.nextcloudlab.kickytime.match.entity;
 
-import com.nextcloudlab.kickytime.user.entity.User;
-import jakarta.persistence.*;
-
-import lombok.Getter;
-import lombok.Setter;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+
+import com.nextcloudlab.kickytime.user.entity.User;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -45,18 +44,18 @@ public class Match {
     @JoinColumn(name = "user_id")
     private User createdBy;
 
-//    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL)
-//    private List<MatchParticipant> participants = new ArrayList<>();
-//
-//    // 현재 참가자 수를 계산하는 메서드
-//    public long getCurrentParticipantCount() {
-//        return participants.stream()
-//                .filter(p -> p.getStatus() == ParticipantStatus.REGISTERED)
-//                .count();
-//    }
-//
-//    // 정원이 찼는지 확인하는 메서드
-//    public boolean isFull() {
-//        return getCurrentParticipantCount() >= maxPlayers;
-//    }
+    //    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL)
+    //    private List<MatchParticipant> participants = new ArrayList<>();
+    //
+    //    // 현재 참가자 수를 계산하는 메서드
+    //    public long getCurrentParticipantCount() {
+    //        return participants.stream()
+    //                .filter(p -> p.getStatus() == ParticipantStatus.REGISTERED)
+    //                .count();
+    //    }
+    //
+    //    // 정원이 찼는지 확인하는 메서드
+    //    public boolean isFull() {
+    //        return getCurrentParticipantCount() >= maxPlayers;
+    //    }
 }
