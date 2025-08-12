@@ -26,6 +26,7 @@ public class SecurityConfig {
                                         .authenticated()
                                         .anyRequest()
                                         .permitAll())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable);
         return http.build();
