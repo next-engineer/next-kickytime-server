@@ -5,16 +5,21 @@ import java.time.LocalDateTime;
 import com.nextcloudlab.kickytime.user.entity.User;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "matches")
 public class Match {
     @Id
@@ -25,18 +30,25 @@ public class Match {
     @Column(nullable = false)
     private MatchStatus matchStatus;
 
+    @Future(message = "경기 일시는 현재보다 미래여야 합니다.")
     @Column(nullable = false)
     private LocalDateTime matchDateTime;
 
+    @NotBlank(message = "장소는 필수입니다.")
+    @Size(max = 255, message = "장소는 255자를 초과할 수 없습니다.")
     @Column(nullable = false)
     private String location;
 
+    @Min(value = 2, message = "최소 2명 이상이어야 합니다.")
+    @Max(value = 22, message = "최대 22명까지 가능합니다.")
     @Column(nullable = false)
     private Integer maxPlayers;
 
-    @Column(nullable = false)
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
