@@ -1,0 +1,6 @@
+spring:
+  profiles:
+    active: dev # 기본 실행 환경
+
+server:
+  port: 8080
