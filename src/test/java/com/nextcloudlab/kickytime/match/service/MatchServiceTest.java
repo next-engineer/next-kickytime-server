@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.nextcloudlab.kickytime.match.controller.MatchCreateRequestDto;
 import com.nextcloudlab.kickytime.match.controller.MatchResponseDto;
 import com.nextcloudlab.kickytime.match.entity.Match;
+import com.nextcloudlab.kickytime.match.entity.MatchParticipant;
 import com.nextcloudlab.kickytime.match.entity.MatchStatus;
 import com.nextcloudlab.kickytime.match.repository.MatchParticipantRepository;
 import com.nextcloudlab.kickytime.match.repository.MatchRepository;
@@ -129,5 +130,76 @@ class MatchServiceTest {
         assertThatThrownBy(() -> matchService.createMatch(createRequestDto))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("관리자 권한이 있는 사용자만 경기를 개설할 수 있습니다.");
+    }
+
+    @Test
+    @DisplayName("경기 참여 - 성공")
+    void joinMatchSuccess() {
+        // given
+        given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
+        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
+        given(participantRepository.findByMatchIdAndUserId(1L, 2L)).willReturn(Optional.empty());
+        given(participantRepository.save(any(MatchParticipant.class)))
+                .willReturn(new MatchParticipant());
+
+        // when
+        assertDoesNotThrow(() -> matchService.joinMatch(1L, 2L));
+
+        // then
+        verify(participantRepository).save(any(MatchParticipant.class));
+    }
+
+    @Test
+    @DisplayName("경기 참여 - 경기 없음 예외")
+    void joinMatchMatchNotFound() {
+        // given
+        given(matchRepository.findById(1L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> matchService.joinMatch(1L, 2L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("경기를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("경기 참여 - 사용자 없음 예외")
+    void joinMatchUserNotFound() {
+        // given
+        given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
+        given(userRepository.findById(2L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> matchService.joinMatch(1L, 2L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("사용자를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("경기 참여 - 참여 불가능한 상태 예외")
+    void joinMatchMatchStatusNotOpen() {
+        // given
+        testMatch.setMatchStatus(MatchStatus.FULL);
+        given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
+        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
+
+        // when & then
+        assertThatThrownBy(() -> matchService.joinMatch(1L, 2L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("참여할 수 없는 경기입니다. 현재 상태: FULL");
+    }
+
+    @Test
+    @DisplayName("경기 참여 - 중복 참가 예외")
+    void joinMatchAlreadyJoined() {
+        // given
+        given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
+        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
+        given(participantRepository.findByMatchIdAndUserId(1L, 2L))
+                .willReturn(Optional.of(new MatchParticipant()));
+
+        // when & then
+        assertThatThrownBy(() -> matchService.joinMatch(1L, 2L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("이미 참가 신청한 경기입니다.");
     }
 }
