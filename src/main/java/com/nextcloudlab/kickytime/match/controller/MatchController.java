@@ -26,4 +26,11 @@ public class MatchController {
         List<MatchResponseDto> matches = matchService.getAllMatches();
         return ResponseEntity.ok(matches);
     }
+
+    // 경기 개설
+    @PostMapping
+    public ResponseEntity<Void> createMatch(@RequestBody MatchCreateRequestDto requestDto) {
+        matchService.createMatch(requestDto);
+        return ResponseEntity.ok().build();
+    }
 }
