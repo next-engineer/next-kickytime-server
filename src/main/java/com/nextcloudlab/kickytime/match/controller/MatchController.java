@@ -33,4 +33,11 @@ public class MatchController {
         matchService.createMatch(requestDto);
         return ResponseEntity.ok().build();
     }
+
+    // 경기 참여 신청
+    @PostMapping("/{matchId}/participants")
+    public ResponseEntity<Void> joinMatch(@PathVariable Long matchId, @RequestParam Long userId) {
+        matchService.joinMatch(matchId, userId);
+        return ResponseEntity.ok().build();
+    }
 }
