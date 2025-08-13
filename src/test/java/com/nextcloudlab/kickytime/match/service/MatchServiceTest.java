@@ -1,12 +1,14 @@
 package com.nextcloudlab.kickytime.match.service;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.nextcloudlab.kickytime.match.controller.MatchCreateRequestDto;
 import com.nextcloudlab.kickytime.match.controller.MatchResponseDto;
 import com.nextcloudlab.kickytime.match.entity.Match;
 import com.nextcloudlab.kickytime.match.entity.MatchStatus;
@@ -40,7 +43,7 @@ class MatchServiceTest {
     private User regularUser;
     private Match testMatch;
 
-    //    private MatchCreateRequestDto createRequestDto;
+    private MatchCreateRequestDto createRequestDto;
 
     @BeforeEach
     void setUp() {
@@ -64,11 +67,11 @@ class MatchServiceTest {
         testMatch.setCreatedBy(adminUser);
 
         // 경기 생성 요청 DTO
-        //        createRequestDto = new MatchCreateRequestDto();
-        //        createRequestDto.setUserId(1L);
-        //        createRequestDto.setMatchDateTime(LocalDateTime.now().plusDays(1));
-        //        createRequestDto.setLocation("서울 강남구");
-        //        createRequestDto.setMaxPlayers(10);
+        createRequestDto = new MatchCreateRequestDto();
+        createRequestDto.setUserId(1L);
+        createRequestDto.setMatchDateTime(LocalDateTime.now().plusDays(1));
+        createRequestDto.setLocation("서울 강남구");
+        createRequestDto.setMaxPlayers(10);
     }
 
     @Test
@@ -86,5 +89,45 @@ class MatchServiceTest {
         assertThat(result.get(0).getId()).isEqualTo(testMatch.getId());
         assertThat(result.get(0).getLocation()).isEqualTo(testMatch.getLocation());
         verify(matchRepository).findAllByOrderByMatchDateTimeDesc();
+    }
+
+    @Test
+    @DisplayName("경기 개설 - 성공")
+    void createMatchSuccess() {
+        // given
+        given(userRepository.findById(1L)).willReturn(Optional.of(adminUser));
+        given(matchRepository.save(any(Match.class))).willReturn(testMatch);
+
+        // when
+        assertDoesNotThrow(() -> matchService.createMatch(createRequestDto));
+
+        // then
+        verify(userRepository).findById(1L);
+        verify(matchRepository).save(any(Match.class));
+    }
+
+    @Test
+    @DisplayName("경기 개설 - 사용자 없음 예외")
+    void createMatchUserNotFound() {
+        // given
+        given(userRepository.findById(1L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> matchService.createMatch(createRequestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("사용자를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("경기 개설 - 관리자 권한 없음 예외")
+    void createMatchNotAdminUser() {
+        // given
+        createRequestDto.setUserId(2L);
+        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
+
+        // when & then
+        assertThatThrownBy(() -> matchService.createMatch(createRequestDto))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("관리자 권한이 있는 사용자만 경기를 개설할 수 있습니다.");
     }
 }
