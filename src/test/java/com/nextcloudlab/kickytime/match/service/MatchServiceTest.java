@@ -1,7 +1,6 @@
 package com.nextcloudlab.kickytime.match.service;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -17,7 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.nextcloudlab.kickytime.match.controller.MatchCreateRequestDto;
 import com.nextcloudlab.kickytime.match.controller.MatchResponseDto;
 import com.nextcloudlab.kickytime.match.entity.Match;
 import com.nextcloudlab.kickytime.match.entity.MatchStatus;
@@ -41,7 +39,7 @@ class MatchServiceTest {
     private User adminUser;
     private User regularUser;
     private Match testMatch;
-    private MatchCreateRequestDto createRequestDto;
+//    private MatchCreateRequestDto createRequestDto;
 
     @BeforeEach
     void setUp() {
@@ -65,11 +63,11 @@ class MatchServiceTest {
         testMatch.setCreatedBy(adminUser);
 
         // 경기 생성 요청 DTO
-        createRequestDto = new MatchCreateRequestDto();
-        createRequestDto.setUserId(1L);
-        createRequestDto.setMatchDateTime(LocalDateTime.now().plusDays(1));
-        createRequestDto.setLocation("서울 강남구");
-        createRequestDto.setMaxPlayers(10);
+//        createRequestDto = new MatchCreateRequestDto();
+//        createRequestDto.setUserId(1L);
+//        createRequestDto.setMatchDateTime(LocalDateTime.now().plusDays(1));
+//        createRequestDto.setLocation("서울 강남구");
+//        createRequestDto.setMaxPlayers(10);
     }
 
     @Test
