@@ -4,6 +4,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import com.nextcloudlab.kickytime.user.dto.UserDto;
 import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.service.UserService;
 import com.nextcloudlab.kickytime.util.CognitoUserInfoClient;
@@ -20,11 +21,17 @@ public class UserController {
         this.userInfoClient = userInfoClient;
     }
 
-    @PostMapping("/me")
+    @PostMapping("/signin-up")
     public User getMyInfo(@AuthenticationPrincipal Jwt accessToken) {
         String cognitoSub = accessToken.getClaimAsString("sub");
         var info = userInfoClient.fetch(accessToken.getTokenValue());
 
         return userService.findOrCreateUser(cognitoSub, info.email(), info.nickname());
+    }
+
+    @GetMapping("/me")
+    public UserDto myProfile(@AuthenticationPrincipal Jwt jwt) {
+        String cognitoSub = jwt.getClaimAsString("sub");
+        return userService.getByCognitoSub(cognitoSub);
     }
 }
