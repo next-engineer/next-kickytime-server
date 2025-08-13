@@ -39,7 +39,8 @@ class MatchServiceTest {
     private User adminUser;
     private User regularUser;
     private Match testMatch;
-//    private MatchCreateRequestDto createRequestDto;
+
+    //    private MatchCreateRequestDto createRequestDto;
 
     @BeforeEach
     void setUp() {
@@ -63,11 +64,11 @@ class MatchServiceTest {
         testMatch.setCreatedBy(adminUser);
 
         // 경기 생성 요청 DTO
-//        createRequestDto = new MatchCreateRequestDto();
-//        createRequestDto.setUserId(1L);
-//        createRequestDto.setMatchDateTime(LocalDateTime.now().plusDays(1));
-//        createRequestDto.setLocation("서울 강남구");
-//        createRequestDto.setMaxPlayers(10);
+        //        createRequestDto = new MatchCreateRequestDto();
+        //        createRequestDto.setUserId(1L);
+        //        createRequestDto.setMatchDateTime(LocalDateTime.now().plusDays(1));
+        //        createRequestDto.setLocation("서울 강남구");
+        //        createRequestDto.setMaxPlayers(10);
     }
 
     @Test
