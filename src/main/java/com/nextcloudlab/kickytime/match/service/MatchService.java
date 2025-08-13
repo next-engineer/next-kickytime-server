@@ -102,4 +102,24 @@ public class MatchService {
             match.setMatchStatus(MatchStatus.FULL);
         }
     }
+
+    // 경기 참여 취소(일반회원)
+    public void leaveMatch(Long matchId, Long userId) {
+        Match match =
+                matchRepository
+                        .findById(matchId)
+                        .orElseThrow(() -> new IllegalArgumentException("경기를 찾을 수 없습니다."));
+
+        MatchParticipant participant =
+                participantRepository
+                        .findByMatchIdAndUserId(matchId, userId)
+                        .orElseThrow(() -> new IllegalArgumentException("참가 신청 내역을 찾을 수 없습니다."));
+
+        participantRepository.deleteById(participant.getId());
+
+        // 정원이 다시 비었으면 상태를 OPEN으로 변경
+        if (match.isFull() && match.getCurrentParticipantCount() < match.getMaxPlayers()) {
+            match.setMatchStatus(MatchStatus.OPEN);
+        }
+    }
 }
