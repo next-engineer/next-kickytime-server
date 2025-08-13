@@ -1,6 +1,8 @@
 package com.nextcloudlab.kickytime.match.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -44,22 +46,20 @@ public class Match extends BaseEntity {
     @Column(nullable = false)
     private Integer maxPlayers;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User createdBy;
 
-    //    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL)
-    //    private List<MatchParticipant> participants = new ArrayList<>();
-    //
-    //    // 현재 참가자 수를 계산하는 메서드
-    //    public long getCurrentParticipantCount() {
-    //        return participants.stream()
-    //                .filter(p -> p.getStatus() == ParticipantStatus.REGISTERED)
-    //                .count();
-    //    }
-    //
-    //    // 정원이 찼는지 확인하는 메서드
-    //    public boolean isFull() {
-    //        return getCurrentParticipantCount() >= maxPlayers;
-    //    }
+    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL)
+    private List<MatchParticipant> participants = new ArrayList<>();
+
+    // 정원이 찼는지 확인
+    public boolean isFull() {
+        return matchStatus == MatchStatus.FULL;
+    }
+
+    // 현재 참가자 수를 반환
+    public Integer getCurrentParticipantCount() {
+        return participants.size();
+    }
 }
