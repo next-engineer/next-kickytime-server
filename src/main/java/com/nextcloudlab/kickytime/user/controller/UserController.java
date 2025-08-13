@@ -2,29 +2,29 @@ package com.nextcloudlab.kickytime.user.controller;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.service.UserService;
+import com.nextcloudlab.kickytime.util.CognitoUserInfoClient;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
+    private final CognitoUserInfoClient userInfoClient;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, CognitoUserInfoClient userInfoClient) {
         this.userService = userService;
+        this.userInfoClient = userInfoClient;
     }
 
-    @GetMapping("/me")
-    public User getMyInfo(@AuthenticationPrincipal Jwt jwt) {
-        String cognitoSub = jwt.getClaimAsString("sub");
-        String email = jwt.getClaimAsString("email");
-        String nickname = jwt.getClaimAsString("nickname");
+    @PostMapping("/me")
+    public User getMyInfo(@AuthenticationPrincipal Jwt accessToken) {
+        String cognitoSub = accessToken.getClaimAsString("sub");
+        var info = userInfoClient.fetch(accessToken.getTokenValue());
 
-        return userService.findOrCreateUser(cognitoSub, email, nickname);
+        return userService.findOrCreateUser(cognitoSub, info.email(), info.nickname());
     }
 }

@@ -6,7 +6,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xI18xw5er/.well-known/jwks.json
+          issuer-uri: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xI18xw5er
+
+app:
+  cognito:
+    region: ap-northeast-2
+    user-pool-id: ap-northeast-2_xI18xw5er
+    client-id: 6l5ovdmof4vc5r2socegk41gt4
+    user-info-uri: https://ap-northeast-2xi18xw5er.auth.ap-northeast-2.amazoncognito.com/oauth2/userInfo
 
 server:
   port: 8080
