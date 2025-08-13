@@ -8,7 +8,7 @@ import com.example.yourproject.service.MatchingService;
 
 import lombok.RequiredArgsConstructor;
 
-/ * 관리자 전용 매치 삭제 API 컨트롤러
+// 관리자 전용 매치 삭제 API 컨트롤러
 @RestController
 @RequestMapping("/api/matches")
 @RequiredArgsConstructor
