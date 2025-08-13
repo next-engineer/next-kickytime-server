@@ -40,4 +40,11 @@ public class MatchController {
         matchService.joinMatch(matchId, userId);
         return ResponseEntity.ok().build();
     }
+
+    // 경기 참여 취소
+    @DeleteMapping("/{matchId}/participants")
+    public ResponseEntity<Void> leaveMatch(@PathVariable Long matchId, @RequestParam Long userId) {
+        matchService.leaveMatch(matchId, userId);
+        return ResponseEntity.ok().build();
+    }
 }

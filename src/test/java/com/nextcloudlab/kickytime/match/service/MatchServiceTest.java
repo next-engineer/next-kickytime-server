@@ -202,4 +202,49 @@ class MatchServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("이미 참가 신청한 경기입니다.");
     }
+
+    @Test
+    @DisplayName("경기 참여 취소 - 성공")
+    void leaveMatchSuccess() {
+        // given
+        MatchParticipant participant = new MatchParticipant();
+        participant.setId(1L);
+        participant.setMatch(testMatch);
+        participant.setUser(regularUser);
+
+        given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
+        given(participantRepository.findByMatchIdAndUserId(1L, 2L))
+                .willReturn(Optional.of(participant));
+
+        // when
+        assertDoesNotThrow(() -> matchService.leaveMatch(1L, 2L));
+
+        // then
+        verify(participantRepository).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("경기 참여 취소 - 경기 없음 예외")
+    void leaveMatchMatchNotFound() {
+        // given
+        given(matchRepository.findById(1L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> matchService.leaveMatch(1L, 2L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("경기를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("경기 참여 취소 - 참가 내역 없음 예외")
+    void leaveMatchParticipantNotFound() {
+        // given
+        given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
+        given(participantRepository.findByMatchIdAndUserId(1L, 2L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> matchService.leaveMatch(1L, 2L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("참가 신청 내역을 찾을 수 없습니다.");
+    }
 }
