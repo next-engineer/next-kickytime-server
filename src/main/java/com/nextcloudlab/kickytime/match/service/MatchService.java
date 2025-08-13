@@ -1,6 +1,8 @@
 package com.nextcloudlab.kickytime.match.service;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.nextcloudlab.kickytime.match.controller.MatchCreateRequestDto;
 import com.nextcloudlab.kickytime.match.controller.MatchResponseDto;
 import com.nextcloudlab.kickytime.match.entity.Match;
+import com.nextcloudlab.kickytime.match.entity.MatchParticipant;
 import com.nextcloudlab.kickytime.match.entity.MatchStatus;
 import com.nextcloudlab.kickytime.match.repository.MatchParticipantRepository;
 import com.nextcloudlab.kickytime.match.repository.MatchRepository;
@@ -61,5 +64,42 @@ public class MatchService {
         match.setCreatedBy(user);
 
         matchRepository.save(match);
+    }
+
+    // 경기 참여 신청
+    public void joinMatch(Long matchId, Long userId) {
+        Match match =
+                matchRepository
+                        .findById(matchId)
+                        .orElseThrow(() -> new IllegalArgumentException("경기를 찾을 수 없습니다."));
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 참여 가능한 상태인지 확인
+        if (match.getMatchStatus() != MatchStatus.OPEN) {
+            throw new IllegalStateException("참여할 수 없는 경기입니다. 현재 상태: " + match.getMatchStatus());
+        }
+
+        // 중복 참가 신청 여부 검증
+        Optional<MatchParticipant> existingParticipant =
+                participantRepository.findByMatchIdAndUserId(matchId, userId);
+
+        if (existingParticipant.isPresent()) {
+            throw new IllegalStateException("이미 참가 신청한 경기입니다.");
+        }
+
+        // Match status OPEN이고 기참여 기록 없으면
+        // 참가자 등록
+        MatchParticipant participant = new MatchParticipant();
+        participant.setMatch(match);
+        participant.setUser(user);
+        participantRepository.save(participant);
+
+        // 현재 등록된 참가자 수가 최대 수와 같으면 마감으로 변경
+        if (Objects.equals(match.getCurrentParticipantCount(), match.getMaxPlayers())) {
+            match.setMatchStatus(MatchStatus.FULL);
+        }
     }
 }
