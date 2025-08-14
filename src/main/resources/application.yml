@@ -1,19 +1,16 @@
 spring:
+  application:
+    name: kickytime
   profiles:
-    active: dev # 기본 실행 환경
+    default: dev         # 기본은 dev (배포에서는 SPRING_PROFILES_ACTIVE=prod 로 덮어씀)
+  web:
+    resources:
+      favicon:
+        enabled: false
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xI18xw5er
-
-app:
-  cognito:
-    region: ap-northeast-2
-    user-pool-id: ap-northeast-2_xI18xw5er
-    client-id: 6l5ovdmof4vc5r2socegk41gt4
-    user-info-uri: https://ap-northeast-2xi18xw5er.auth.ap-northeast-2.amazoncognito.com/oauth2/userInfo
+logging:
+  level:
+    org.springframework.security: INFO
 
 server:
   port: 8080
