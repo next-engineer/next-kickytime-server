@@ -55,7 +55,7 @@ public class MatchController {
     @GetMapping("/me")
     public ResponseEntity<MyMatchesResponse> getMyMatches(@AuthenticationPrincipal Jwt jwt) {
         String cognitoSub = jwt.getClaimAsString("sub");
-        MyMatchesResponse response = matchParticipantService.getMyParticipations(cognitoSub);
+        MyMatchesResponse response = matchParticipantService.getMyParticipant(cognitoSub);
         return ResponseEntity.ok(response);
     }
 
