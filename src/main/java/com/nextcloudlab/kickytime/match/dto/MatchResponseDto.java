@@ -1,4 +1,4 @@
-package com.nextcloudlab.kickytime.match.controller;
+package com.nextcloudlab.kickytime.match.dto;
 
 import java.time.LocalDateTime;
 

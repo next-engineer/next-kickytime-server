@@ -18,8 +18,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.nextcloudlab.kickytime.match.controller.MatchCreateRequestDto;
-import com.nextcloudlab.kickytime.match.controller.MatchResponseDto;
+import com.nextcloudlab.kickytime.match.dto.MatchCreateRequestDto;
+import com.nextcloudlab.kickytime.match.dto.MatchResponseDto;
 import com.nextcloudlab.kickytime.match.entity.Match;
 import com.nextcloudlab.kickytime.match.entity.MatchParticipant;
 import com.nextcloudlab.kickytime.match.entity.MatchStatus;
