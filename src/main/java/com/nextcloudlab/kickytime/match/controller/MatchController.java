@@ -59,4 +59,11 @@ public class MatchController {
         MyMatchesResponse response = matchParticipantService.getMyParticipant(cognitoSub);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{matchId}")
+    public ResponseEntity<Void> deleteMatch(@PathVariable Long matchId) {
+        matchService.deleteMatchById(matchId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
