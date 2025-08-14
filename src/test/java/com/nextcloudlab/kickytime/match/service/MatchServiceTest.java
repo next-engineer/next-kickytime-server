@@ -247,4 +247,36 @@ class MatchServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("참가 신청 내역을 찾을 수 없습니다.");
     }
+
+    @Test
+    @DisplayName("경기 삭제 - 성공")
+    void deleteMatchByIdSuccess() {
+        // given
+        Long matchId = 1L;
+        given(matchRepository.existsById(matchId)).willReturn(true);
+        doNothing().when(matchRepository).deleteById(matchId);
+
+        // when
+        assertDoesNotThrow(() -> matchService.deleteMatchById(matchId));
+
+        // then
+        verify(matchRepository).existsById(matchId);
+        verify(matchRepository).deleteById(matchId);
+    }
+
+    @Test
+    @DisplayName("경기 삭제 - 경기 없음 예외")
+    void deleteMatchByIdNotFound() {
+        // given
+        Long matchId = 1L;
+        given(matchRepository.existsById(matchId)).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> matchService.deleteMatchById(matchId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("해당 매치를 찾을 수 없습니다.");
+
+        verify(matchRepository).existsById(matchId);
+        verify(matchRepository, never()).deleteById(anyLong());
+    }
 }
