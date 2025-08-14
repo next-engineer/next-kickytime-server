@@ -1,19 +1,12 @@
 package com.nextcloudlab.kickytime.match.dto;
 
-import com.nextcloudlab.kickytime.match.entity.MatchStatus;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record MyMatchesResponse(
-        Summary summary,
-        List<MatchInfo> matches
-) {
-    public record Summary(
-            long totalCount,
-            long upcomingCount,
-            long completedCount
-    ) {}
+import com.nextcloudlab.kickytime.match.entity.MatchStatus;
+
+public record MyMatchesResponse(Summary summary, List<MatchInfo> matches) {
+    public record Summary(long totalCount, long upcomingCount, long completedCount) {}
 
     public record MatchInfo(
             Long matchId,
@@ -23,6 +16,5 @@ public record MyMatchesResponse(
             int maxPlayers,
             long currentPlayers,
             LocalDateTime joinedAt,
-            MatchStatus matchStatus
-    ) {}
+            MatchStatus matchStatus) {}
 }

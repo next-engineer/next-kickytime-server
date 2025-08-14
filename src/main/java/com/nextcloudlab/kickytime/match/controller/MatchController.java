@@ -1,19 +1,20 @@
 package com.nextcloudlab.kickytime.match.controller;
 
-import java.util.Collections;
 import java.util.List;
 
-import com.nextcloudlab.kickytime.match.dto.MyMatchesResponse;
-import com.nextcloudlab.kickytime.match.service.MatchParticipantService;
-import lombok.RequiredArgsConstructor;
+import com.nextcloudlab.kickytime.match.dto.MatchCreateRequestDto;
+import com.nextcloudlab.kickytime.match.dto.MatchResponseDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import com.nextcloudlab.kickytime.match.dto.MyMatchesResponse;
+import com.nextcloudlab.kickytime.match.service.MatchParticipantService;
 import com.nextcloudlab.kickytime.match.service.MatchService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/matches")
@@ -58,6 +59,4 @@ public class MatchController {
         MyMatchesResponse response = matchParticipantService.getMyParticipant(cognitoSub);
         return ResponseEntity.ok(response);
     }
-
-
 }

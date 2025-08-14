@@ -1,4 +1,4 @@
-package com.nextcloudlab.kickytime.service;
+package com.nextcloudlab.kickytime.match.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

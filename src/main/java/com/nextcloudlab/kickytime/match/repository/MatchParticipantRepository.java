@@ -3,17 +3,18 @@ package com.nextcloudlab.kickytime.match.repository;
 import java.util.List;
 import java.util.Optional;
 
-import com.nextcloudlab.kickytime.match.dto.MyMatchesResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.nextcloudlab.kickytime.match.entity.MatchParticipant;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import com.nextcloudlab.kickytime.match.dto.MyMatchesResponse;
+import com.nextcloudlab.kickytime.match.entity.MatchParticipant;
 
 public interface MatchParticipantRepository extends JpaRepository<MatchParticipant, Long> {
     Optional<MatchParticipant> findByMatchIdAndUserId(Long matchId, Long userId);
 
-    @Query("""
+    @Query(
+            """
         SELECT new com.nextcloudlab.kickytime.match.dto.MyMatchesResponse$MatchInfo(
             m.id,
             mp.id,
@@ -30,5 +31,6 @@ public interface MatchParticipantRepository extends JpaRepository<MatchParticipa
         WHERE u.cognitoSub = :cognitoSub
         ORDER BY m.matchDateTime DESC
     """)
-    List<MyMatchesResponse.MatchInfo> findMatchParticipantByUserId(@Param("cognitoSub") String cognitoSub);
+    List<MyMatchesResponse.MatchInfo> findMatchParticipantByUserId(
+            @Param("cognitoSub") String cognitoSub);
 }
