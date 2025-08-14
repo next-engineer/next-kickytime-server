@@ -8,9 +8,19 @@ spring:
       favicon:
         enabled: false
 
+app:
+  cognito:
+    region: ap-northeast-2
+    user-pool-id: ap-northeast-2_xI18xw5er
+    client-id: 6l5ovdmof4vc5r2socegk41gt4
+    user-info-uri: https://ap-northeast-2xi18xw5er.auth.ap-northeast-2.amazoncognito.com/oauth2/userInfo
+  cors:
+    allowed-origins: "http://localhost:5173"
+
 logging:
   level:
     org.springframework.security: INFO
 
 server:
   port: 8080
+
