@@ -31,10 +31,17 @@ public class MatchService {
     }
 
     // 전체 경기 목록 조회
-    @Transactional()
     public List<MatchResponseDto> getAllMatches() {
         List<Match> matches = matchRepository.findAllByOrderByMatchDateTimeDesc();
-
         return matches.stream().map(MatchResponseDto::new).collect(Collectors.toList());
+    }
+
+    // 매칭 삭제 기능
+    public void deleteMatchById(Long matchId) {
+        if (!matchRepository.existsById(matchId)) {
+            throw new IllegalArgumentException("해당 매치를 찾을 수 없습니다.");
+        }
+
+        matchRepository.deleteById(matchId);
     }
 }

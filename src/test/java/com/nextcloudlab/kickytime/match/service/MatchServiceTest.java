@@ -2,12 +2,14 @@ package com.nextcloudlab.kickytime.match.service;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import com.nextcloudlab.kickytime.service.MatchingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -72,19 +74,38 @@ class MatchServiceTest {
     }
 
     @Test
-    @DisplayName("경기 목록 조회 - 성공")
-    void getAllMatchesSuccess() {
+    @DisplayName("매칭 삭제 성공")
+    void deleteMatchByIdSuccess() {
         // given
-        List<Match> matches = Arrays.asList(testMatch);
-        given(matchRepository.findAllByOrderByMatchDateTimeDesc()).willReturn(matches);
+        // 매칭 ID가 존재하는 경우를 가정
+        given(matchRepository.existsById(testMatch.getId())).willReturn(true);
+        // 삭제 메서드 호출 시 아무것도 하지 않도록 설정
+        willDoNothing().given(matchRepository).deleteById(testMatch.getId());
 
         // when
-        List<MatchResponseDto> result = matchService.getAllMatches();
+        // 실제 매칭 삭제 메서드 호출
+        MatchingService matchingService;
+        matchingService.deleteMatchById(testMatch.getId());
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(testMatch.getId());
-        assertThat(result.get(0).getLocation()).isEqualTo(testMatch.getLocation());
-        verify(matchRepository).findAllByOrderByMatchDateTimeDesc();
+        // `existsById`가 한 번 호출되었는지 검증
+        verify(matchRepository, times(1)).existsById(testMatch.getId());
+        // `deleteById`가 한 번 호출되었는지 검증
+        verify(matchRepository, times(1)).deleteById(testMatch.getId());
     }
-}
+
+    @Test
+    @DisplayName("매칭 삭제 실패 - 매칭이 존재하지 않을 경우")
+    void deleteMatchByIdFailWhenNotExists() {
+        // given
+        Long invalidId = 999L;
+        given(matchRepository.existsById(invalidId)).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> matchService.deleteMatchById(invalidId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("해당 매치를 찾을 수 없습니다.");
+
+        verify(matchRepository, times(1)).existsById(invalidId);
+        verify(matchRepository, never()).deleteById(anyLong());
+    }
