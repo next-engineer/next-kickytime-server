@@ -122,4 +122,13 @@ public class MatchService {
             match.setMatchStatus(MatchStatus.OPEN);
         }
     }
+
+    // 매칭 삭제 기능
+    public void deleteMatchById(Long matchId) {
+        if (!matchRepository.existsById(matchId)) {
+            throw new IllegalArgumentException("해당 매치를 찾을 수 없습니다.");
+        }
+
+        matchRepository.deleteById(matchId);
+    }
 }
