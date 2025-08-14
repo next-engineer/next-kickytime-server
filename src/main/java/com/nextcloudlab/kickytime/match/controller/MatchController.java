@@ -65,5 +65,4 @@ public class MatchController {
         matchService.deleteMatchById(matchId);
         return ResponseEntity.noContent().build();
     }
-
 }

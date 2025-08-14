@@ -131,5 +131,4 @@ public class MatchService {
 
         matchRepository.deleteById(matchId);
     }
-
 }
