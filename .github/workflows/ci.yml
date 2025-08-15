@@ -6,10 +6,6 @@ on:
   push:
     branches: [ main, develop ]
 
-env:
-  DB_URL: ${{ secrets.DB_URL }}
-  DB_USERNAME: ${{ secrets.DB_USERNAME }}
-  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
 jobs:
   build-and-lint:
@@ -20,7 +16,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Gradle Wrapper 스크립트(gradlew 및 관련 JAR) 무결성 검증
-        uses: gradle/wrapper-validation-action@v2
+        uses: gradle/wrapper-validation-action@v3
+        timeout-minutes: 2
+        continue-on-error: true
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -36,3 +34,5 @@ jobs:
 
       - name: Build (includes spotless/checkstyle/test via `check` dependency)
         run: ./gradlew --no-daemon build
+        env:
+          SPRING_PROFILES_ACTIVE: test

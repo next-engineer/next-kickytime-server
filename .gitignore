@@ -458,3 +458,5 @@ $RECYCLE.BIN/
 !gradle-wrapper.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/java,intellij,node,git,windows,macos,venv,visualstudiocode,eclipse
+
+application-dev.yml

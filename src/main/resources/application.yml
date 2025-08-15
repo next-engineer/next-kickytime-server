@@ -1,19 +1,43 @@
 spring:
+  application:
+    name: kickytime
   profiles:
-    active: dev # 기본 실행 환경
+    default: dev
+  web:
+    resources:
+      favicon:
+        enabled: false
 
+  # 공통 JPA 설정
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # 공통 datasource 설정
+  datasource:
+    driver-class-name: org.postgresql.Driver
+
+  # JWT 설정 (기본값 포함)
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xI18xw5er
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xI18xw5er}
 
+# 공통 앱 설정 (기본값 포함)
 app:
   cognito:
-    region: ap-northeast-2
-    user-pool-id: ap-northeast-2_xI18xw5er
-    client-id: 6l5ovdmof4vc5r2socegk41gt4
-    user-info-uri: https://ap-northeast-2xi18xw5er.auth.ap-northeast-2.amazoncognito.com/oauth2/userInfo
+    region: ${COGNITO_REGION:ap-northeast-2}
+    user-pool-id: ${COGNITO_USER_POOL_ID:ap-northeast-2_xI18xw5er}
+    client-id: ${COGNITO_CLIENT_ID:6l5ovdmof4vc5r2socegk41gt4}
+    user-info-uri: ${COGNITO_USER_INFO_URI:https://ap-northeast-2xi18xw5er.auth.ap-northeast-2.amazoncognito.com/oauth2/userInfo}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+logging:
+  level:
+    org.springframework.security: INFO
 
 server:
   port: 8080
