@@ -2,7 +2,7 @@ spring:
   application:
     name: kickytime
   profiles:
-    default: dev         # 기본은 dev (배포에서는 SPRING_PROFILES_ACTIVE=prod 로 덮어씀)
+    default: dev
   web:
     resources:
       favicon:
