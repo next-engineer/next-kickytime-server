@@ -6,10 +6,6 @@ on:
   push:
     branches: [ main, develop ]
 
-env:
-  DB_URL: ${{ secrets.DB_URL }}
-  DB_USERNAME: ${{ secrets.DB_USERNAME }}
-  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
 jobs:
   build-and-lint:
@@ -36,3 +32,5 @@ jobs:
 
       - name: Build (includes spotless/checkstyle/test via `check` dependency)
         run: ./gradlew --no-daemon build
+        env:
+          SPRING_PROFILES_ACTIVE: test
