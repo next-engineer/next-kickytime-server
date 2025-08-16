@@ -7,6 +7,7 @@ import com.nextcloudlab.kickytime.user.entity.User;
 public record UserDto(
         Long id,
         String email,
+        Boolean email_verified,
         String nickname,
         String imageUrl,
         String role,
@@ -16,6 +17,7 @@ public record UserDto(
         return new UserDto(
                 user.getId(),
                 user.getEmail(),
+                user.isEmailVerified(),
                 user.getNickname(),
                 user.getImageUrl(),
                 user.getRole().name(),

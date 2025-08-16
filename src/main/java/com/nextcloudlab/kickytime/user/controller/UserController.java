@@ -22,11 +22,13 @@ public class UserController {
     }
 
     @PostMapping("/signin-up")
-    public User getMyInfo(@AuthenticationPrincipal Jwt accessToken) {
+    public User signInUp(@AuthenticationPrincipal Jwt accessToken) {
         String cognitoSub = accessToken.getClaimAsString("sub");
         var info = userInfoClient.fetch(accessToken.getTokenValue());
 
-        return userService.findOrCreateUser(cognitoSub, info.email(), info.nickname());
+        boolean emailVerified = Boolean.TRUE.equals(info.emailVerified());
+
+        return userService.findOrCreateUser(cognitoSub, info.email(), info.nickname(), emailVerified);
     }
 
     @GetMapping("/me")
