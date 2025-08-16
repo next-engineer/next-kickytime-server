@@ -1,0 +1,101 @@
+name: ECR - Build & Push
+
+on:
+  workflow_run:
+    workflows: ["CI"]   # ← 여기 'CI 워크플로우의 name'을 정확히 넣어줘
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: ecr-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: kickytime-repo
+
+jobs:
+  build_and_push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    env:
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+
+    steps:
+      - name: Checkout target commit (from CI)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # 🔥 NEW: Docker Buildx 설정 (멀티 플랫폼 지원)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials (Access Keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set TAG from head_sha
+        id: tag
+        run: echo "TAG=${HEAD_SHA::12}" >> $GITHUB_OUTPUT
+
+      # 🔥 MODIFIED: ARM64 빌드로 변경
+      - name: Build & Push ARM64 image
+        id: build
+        run: |
+          set -e
+          REGISTRY="${{ steps.ecr.outputs.registry }}"
+          TAG="${{ steps.tag.outputs.TAG }}"
+          IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:$TAG"
+          LATEST_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
+
+          echo "Building ARM64 image: $IMAGE_URI (commit=$HEAD_SHA)"
+          
+          # ARM64 플랫폼으로 빌드 및 푸시
+          docker buildx build \
+            --platform linux/arm64 \
+            --push \
+            --tag "$IMAGE_URI" \
+            --tag "$LATEST_URI" \
+            .
+
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_OUTPUT
+          echo "Successfully built and pushed ARM64 image"
+
+      # 🔥 NEW: 이미지 아키텍처 확인
+      - name: Verify ARM64 architecture
+        run: |
+          REGISTRY="${{ steps.ecr.outputs.registry }}"
+          TAG="${{ steps.tag.outputs.TAG }}"
+          IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:$TAG"
+          
+          echo "=== Verifying image architecture ==="
+          docker manifest inspect "$IMAGE_URI" | grep -A 10 '"architecture"'
+          
+          # ARM64 확인
+          ARCH=$(docker manifest inspect "$IMAGE_URI" | jq -r '.manifests[0].platform.architecture // .architecture')
+          if [ "$ARCH" = "arm64" ]; then
+            echo "✅ Confirmed: Image is ARM64"
+          else
+            echo "❌ Error: Image architecture is $ARCH, expected arm64"
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "### ✅ ECR Push Completed (ARM64)" >> $GITHUB_STEP_SUMMARY
+          echo "- Repo: \`${{ env.ECR_REPOSITORY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag: \`${{ steps.tag.outputs.TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ env.HEAD_SHA }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Platform: \`linux/arm64\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: \`${{ steps.build.outputs.IMAGE_URI }}\`" >> $GITHUB_STEP_SUMMARY
