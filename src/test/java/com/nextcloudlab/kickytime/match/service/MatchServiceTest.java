@@ -140,7 +140,8 @@ class MatchServiceTest {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
         given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
-        given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular")).willReturn(Optional.empty());
+        given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular"))
+                .willReturn(Optional.empty());
         given(participantRepository.save(any(MatchParticipant.class)))
                 .willReturn(new MatchParticipant());
 
@@ -242,7 +243,8 @@ class MatchServiceTest {
     void leaveMatchParticipantNotFound() {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular")).willReturn(Optional.empty());
+        given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular"))
+                .willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> matchService.leaveMatch(1L, "sub-regular"))

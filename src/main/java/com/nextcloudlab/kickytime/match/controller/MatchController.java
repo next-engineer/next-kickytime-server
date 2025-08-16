@@ -41,7 +41,8 @@ public class MatchController {
 
     // 경기 참여 신청
     @PostMapping("/{matchId}/participants")
-    public ResponseEntity<Void> joinMatch(@PathVariable Long matchId, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Void> joinMatch(
+            @PathVariable Long matchId, @AuthenticationPrincipal Jwt jwt) {
         String cognitoSub = jwt.getClaimAsString("sub");
         matchService.joinMatch(matchId, cognitoSub);
         return ResponseEntity.ok().build();
@@ -49,7 +50,8 @@ public class MatchController {
 
     // 경기 참여 취소
     @DeleteMapping("/{matchId}/participants")
-    public ResponseEntity<Void> leaveMatch(@PathVariable Long matchId, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Void> leaveMatch(
+            @PathVariable Long matchId, @AuthenticationPrincipal Jwt jwt) {
         String cognitoSub = jwt.getClaimAsString("sub");
         matchService.leaveMatch(matchId, cognitoSub);
         return ResponseEntity.ok().build();

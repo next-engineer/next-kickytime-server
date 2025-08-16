@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.nextcloudlab.kickytime.match.dto.MatchCreateRequestDto;
 import com.nextcloudlab.kickytime.match.dto.MatchResponseDto;
@@ -20,7 +21,6 @@ import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Transactional
@@ -74,7 +74,6 @@ public class MatchService {
                 matchRepository
                         .findById(matchId)
                         .orElseThrow(() -> new IllegalArgumentException("경기를 찾을 수 없습니다."));
-
 
         User user =
                 userRepository

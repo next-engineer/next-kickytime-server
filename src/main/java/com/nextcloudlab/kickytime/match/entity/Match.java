@@ -32,7 +32,7 @@ public class Match extends BaseEntity {
     @Column(nullable = false)
     private MatchStatus matchStatus;
 
-//    @Future(message = "경기 일시는 현재보다 미래여야 합니다.")
+    //    @Future(message = "경기 일시는 현재보다 미래여야 합니다.")
     @Column(nullable = false)
     private LocalDateTime matchDateTime;
 
