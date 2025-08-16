@@ -5,6 +5,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Component
 public class CognitoUserInfoClient {
     private final RestClient restClient;
@@ -24,5 +26,6 @@ public class CognitoUserInfoClient {
                 .body(UserInfo.class);
     }
 
-    public record UserInfo(String email, String nickname) {}
+    public record UserInfo(
+            String email, String nickname, @JsonProperty("email_verified") Boolean emailVerified) {}
 }
