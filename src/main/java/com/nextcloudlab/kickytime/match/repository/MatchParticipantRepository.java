@@ -11,20 +11,18 @@ import com.nextcloudlab.kickytime.match.dto.MyMatchesResponse;
 import com.nextcloudlab.kickytime.match.entity.MatchParticipant;
 
 public interface MatchParticipantRepository extends JpaRepository<MatchParticipant, Long> {
-    Optional<MatchParticipant> findByMatchIdAndUserId(Long matchId, Long userId);
-
     @Query(
             """
-        SELECT new com.nextcloudlab.kickytime.match.dto.MyMatchesResponse$MatchInfo(
-            m.id,
-            mp.id,
-            m.location,
-            m.matchDateTime,
-            m.maxPlayers,
-            (SELECT COUNT(p2.id) FROM MatchParticipant p2 WHERE p2.match.id = m.id),
-            mp.joinedAt,
-            m.matchStatus
-        )
+        SELECT m.id              AS matchId,
+                   mp.id             AS participantId,
+                   m.location        AS location,
+                   m.matchDateTime   AS matchDateTime,
+                   m.maxPlayers      AS maxPlayers,
+                   (SELECT COUNT(p2.id)
+                      FROM MatchParticipant p2
+                     WHERE p2.match.id = m.id)           AS currentPlayers,
+                   mp.joinedAt       AS joinedAt,
+                   m.matchStatus     AS matchStatus
         FROM MatchParticipant mp
         JOIN mp.match m
         JOIN mp.user u
@@ -33,4 +31,15 @@ public interface MatchParticipantRepository extends JpaRepository<MatchParticipa
     """)
     List<MyMatchesResponse.MatchInfo> findMatchParticipantByUserId(
             @Param("cognitoSub") String cognitoSub);
+
+    @Query(
+            """
+        SELECT mp
+        FROM MatchParticipant mp
+        JOIN mp.match m
+        JOIN mp.user u
+        WHERE u.cognitoSub = :cognitoSub
+        AND m.id = :matchId
+    """)
+    Optional<MatchParticipant> findByMatchIdAndUserId(Long matchId, String cognitoSub);
 }

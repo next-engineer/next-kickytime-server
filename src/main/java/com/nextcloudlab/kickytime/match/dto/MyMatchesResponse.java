@@ -8,11 +8,11 @@ import com.nextcloudlab.kickytime.match.entity.MatchStatus;
 public record MyMatchesResponse(Summary summary, List<MatchInfo> matches) {
     public record Summary(long totalCount, long upcomingCount, long completedCount) {}
 
-    public record MatchInfo(
-            Long matchId,
+    public static record MatchInfo(
+            Long id,
             Long participantId,
             String location,
-            LocalDateTime matchTime,
+            LocalDateTime matchDateTime,
             int maxPlayers,
             long currentPlayers,
             LocalDateTime joinedAt,

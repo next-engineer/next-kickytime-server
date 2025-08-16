@@ -51,11 +51,13 @@ class MatchServiceTest {
         // 관리자 사용자
         adminUser = new User();
         adminUser.setId(1L);
+        adminUser.setCognitoSub("sub-admin");
         adminUser.setRole(RoleEnum.ADMIN);
 
         // 일반 사용자
         regularUser = new User();
         regularUser.setId(2L);
+        regularUser.setCognitoSub("sub-regular");
         regularUser.setRole(RoleEnum.USER);
 
         // 테스트용 경기
@@ -69,7 +71,7 @@ class MatchServiceTest {
 
         // 경기 생성 요청 DTO
         createRequestDto = new MatchCreateRequestDto();
-        createRequestDto.setUserId(1L);
+        createRequestDto.setCreatedBy(1L);
         createRequestDto.setMatchDateTime(LocalDateTime.now().plusDays(1));
         createRequestDto.setLocation("서울 강남구");
         createRequestDto.setMaxPlayers(10);
@@ -123,7 +125,7 @@ class MatchServiceTest {
     @DisplayName("경기 개설 - 관리자 권한 없음 예외")
     void createMatchNotAdminUser() {
         // given
-        createRequestDto.setUserId(2L);
+        createRequestDto.setCreatedBy(2L);
         given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
 
         // when & then
@@ -137,13 +139,14 @@ class MatchServiceTest {
     void joinMatchSuccess() {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
-        given(participantRepository.findByMatchIdAndUserId(1L, 2L)).willReturn(Optional.empty());
+        given(userRepository.findByCognitoSub("sub-regular")).willReturn(Optional.of(regularUser));
+        given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular"))
+                .willReturn(Optional.empty());
         given(participantRepository.save(any(MatchParticipant.class)))
                 .willReturn(new MatchParticipant());
 
         // when
-        assertDoesNotThrow(() -> matchService.joinMatch(1L, 2L));
+        assertDoesNotThrow(() -> matchService.joinMatch(1L, "sub-regular"));
 
         // then
         verify(participantRepository).save(any(MatchParticipant.class));
@@ -156,7 +159,7 @@ class MatchServiceTest {
         given(matchRepository.findById(1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> matchService.joinMatch(1L, 2L))
+        assertThatThrownBy(() -> matchService.joinMatch(1L, "sub-regular"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("경기를 찾을 수 없습니다.");
     }
@@ -166,10 +169,10 @@ class MatchServiceTest {
     void joinMatchUserNotFound() {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(userRepository.findById(2L)).willReturn(Optional.empty());
+        given(userRepository.findByCognitoSub("sub-regular")).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> matchService.joinMatch(1L, 2L))
+        assertThatThrownBy(() -> matchService.joinMatch(1L, "sub-regular"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("사용자를 찾을 수 없습니다.");
     }
@@ -180,10 +183,10 @@ class MatchServiceTest {
         // given
         testMatch.setMatchStatus(MatchStatus.FULL);
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
+        given(userRepository.findByCognitoSub("sub-regular")).willReturn(Optional.of(regularUser));
 
         // when & then
-        assertThatThrownBy(() -> matchService.joinMatch(1L, 2L))
+        assertThatThrownBy(() -> matchService.joinMatch(1L, "sub-regular"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("참여할 수 없는 경기입니다. 현재 상태: FULL");
     }
@@ -193,12 +196,12 @@ class MatchServiceTest {
     void joinMatchAlreadyJoined() {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
-        given(participantRepository.findByMatchIdAndUserId(1L, 2L))
+        given(userRepository.findByCognitoSub("sub-regular")).willReturn(Optional.of(regularUser));
+        given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular"))
                 .willReturn(Optional.of(new MatchParticipant()));
 
         // when & then
-        assertThatThrownBy(() -> matchService.joinMatch(1L, 2L))
+        assertThatThrownBy(() -> matchService.joinMatch(1L, "sub-regular"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("이미 참가 신청한 경기입니다.");
     }
@@ -213,11 +216,11 @@ class MatchServiceTest {
         participant.setUser(regularUser);
 
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(participantRepository.findByMatchIdAndUserId(1L, 2L))
+        given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular"))
                 .willReturn(Optional.of(participant));
 
         // when
-        assertDoesNotThrow(() -> matchService.leaveMatch(1L, 2L));
+        assertDoesNotThrow(() -> matchService.leaveMatch(1L, "sub-regular"));
 
         // then
         verify(participantRepository).deleteById(1L);
@@ -230,7 +233,7 @@ class MatchServiceTest {
         given(matchRepository.findById(1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> matchService.leaveMatch(1L, 2L))
+        assertThatThrownBy(() -> matchService.leaveMatch(1L, "sub-regular"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("경기를 찾을 수 없습니다.");
     }
@@ -240,10 +243,11 @@ class MatchServiceTest {
     void leaveMatchParticipantNotFound() {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(participantRepository.findByMatchIdAndUserId(1L, 2L)).willReturn(Optional.empty());
+        given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular"))
+                .willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> matchService.leaveMatch(1L, 2L))
+        assertThatThrownBy(() -> matchService.leaveMatch(1L, "sub-regular"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("참가 신청 내역을 찾을 수 없습니다.");
     }
