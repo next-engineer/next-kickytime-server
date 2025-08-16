@@ -8,7 +8,7 @@ plugins {
 	id 'checkstyle'
 }
 
-group = 'com.kickytime'
+group = 'com.nextcloudlab.kickytime'
 version = '0.0.1-SNAPSHOT'
 
 java {
