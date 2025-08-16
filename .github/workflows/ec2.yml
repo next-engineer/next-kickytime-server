@@ -1,0 +1,48 @@
+name: Deploy to Private EC2 via SSM (rolling)
+
+on:
+  push:
+    branches: [ develop ]
+
+env:
+  AWS_REGION: ap-northeast-2
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REPOSITORY: kickytime-repo
+  IMAGE_TAG: latest
+  INSTANCE_IDS_JSON: '["i-08f17d18d83292c07","i-0effd27241a4308cc"]'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        instance_id: ${{ fromJson(env.INSTANCE_IDS_JSON) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to ${{ matrix.instance_id }}
+        run: |
+          aws ssm send-command \
+            --region "${AWS_REGION}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy ${IMAGE_TAG} to ${{ matrix.instance_id }}" \
+            --instance-ids "${{ matrix.instance_id }}" \
+            --parameters '{
+              "commands":[
+                "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com",
+                "docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}",
+                "docker rm -f my-service || true",
+                "docker run -d --name my-service -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}",
+                "for i in {1..30}; do curl -fsS http://localhost:8080/actuator/health && break || sleep 3; done || echo \"healthcheck warn\""
+              ]
+            }'
