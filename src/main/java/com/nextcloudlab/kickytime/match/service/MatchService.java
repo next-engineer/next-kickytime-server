@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.nextcloudlab.kickytime.match.dto.MatchCreateRequestDto;
@@ -19,6 +20,7 @@ import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Transactional
@@ -49,7 +51,7 @@ public class MatchService {
     public void createMatch(MatchCreateRequestDto requestDto) {
         User user =
                 userRepository
-                        .findById(requestDto.getUserId())
+                        .findById(requestDto.getCreatedBy())
                         .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         if (user.getRole() != RoleEnum.ADMIN) {
@@ -67,15 +69,20 @@ public class MatchService {
     }
 
     // 경기 참여 신청
-    public void joinMatch(Long matchId, Long userId) {
+    public void joinMatch(Long matchId, String cognitoSub) {
         Match match =
                 matchRepository
                         .findById(matchId)
                         .orElseThrow(() -> new IllegalArgumentException("경기를 찾을 수 없습니다."));
+
+
         User user =
                 userRepository
-                        .findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                        .findByCognitoSub(cognitoSub)
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         // 참여 가능한 상태인지 확인
         if (match.getMatchStatus() != MatchStatus.OPEN) {
@@ -84,7 +91,7 @@ public class MatchService {
 
         // 중복 참가 신청 여부 검증
         Optional<MatchParticipant> existingParticipant =
-                participantRepository.findByMatchIdAndUserId(matchId, userId);
+                participantRepository.findByMatchIdAndUserId(matchId, cognitoSub);
 
         if (existingParticipant.isPresent()) {
             throw new IllegalStateException("이미 참가 신청한 경기입니다.");
@@ -104,7 +111,7 @@ public class MatchService {
     }
 
     // 경기 참여 취소(일반회원)
-    public void leaveMatch(Long matchId, Long userId) {
+    public void leaveMatch(Long matchId, String cognitoSub) {
         Match match =
                 matchRepository
                         .findById(matchId)
@@ -112,7 +119,7 @@ public class MatchService {
 
         MatchParticipant participant =
                 participantRepository
-                        .findByMatchIdAndUserId(matchId, userId)
+                        .findByMatchIdAndUserId(matchId, cognitoSub)
                         .orElseThrow(() -> new IllegalArgumentException("참가 신청 내역을 찾을 수 없습니다."));
 
         participantRepository.deleteById(participant.getId());
@@ -123,7 +130,7 @@ public class MatchService {
         }
     }
 
-    // 매칭 삭제 기능
+    // 매치 삭제 기능
     public void deleteMatchById(Long matchId) {
         if (!matchRepository.existsById(matchId)) {
             throw new IllegalArgumentException("해당 매치를 찾을 수 없습니다.");

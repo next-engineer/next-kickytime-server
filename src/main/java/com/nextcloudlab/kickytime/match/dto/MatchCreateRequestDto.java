@@ -12,7 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MatchCreateRequestDto {
-    private Long userId;
+    private Long createdBy;
     private LocalDateTime matchDateTime;
     private String location;
     private Integer maxPlayers;
