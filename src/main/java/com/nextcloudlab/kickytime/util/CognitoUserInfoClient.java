@@ -1,10 +1,11 @@
 package com.nextcloudlab.kickytime.util;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Component
 public class CognitoUserInfoClient {
@@ -25,5 +26,6 @@ public class CognitoUserInfoClient {
                 .body(UserInfo.class);
     }
 
-    public record UserInfo(String email, String nickname, @JsonProperty("email_verified") Boolean emailVerified) {}
+    public record UserInfo(
+            String email, String nickname, @JsonProperty("email_verified") Boolean emailVerified) {}
 }

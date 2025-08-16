@@ -28,7 +28,8 @@ public class UserController {
 
         boolean emailVerified = Boolean.TRUE.equals(info.emailVerified());
 
-        return userService.findOrCreateUser(cognitoSub, info.email(), info.nickname(), emailVerified);
+        return userService.findOrCreateUser(
+                cognitoSub, info.email(), info.nickname(), emailVerified);
     }
 
     @GetMapping("/me")
