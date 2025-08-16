@@ -139,7 +139,7 @@ class MatchServiceTest {
     void joinMatchSuccess() {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
+        given(userRepository.findByCognitoSub("sub-regular")).willReturn(Optional.of(regularUser));
         given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular"))
                 .willReturn(Optional.empty());
         given(participantRepository.save(any(MatchParticipant.class)))
@@ -169,7 +169,7 @@ class MatchServiceTest {
     void joinMatchUserNotFound() {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(userRepository.findById(2L)).willReturn(Optional.empty());
+        given(userRepository.findByCognitoSub("sub-regular")).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> matchService.joinMatch(1L, "sub-regular"))
@@ -183,7 +183,7 @@ class MatchServiceTest {
         // given
         testMatch.setMatchStatus(MatchStatus.FULL);
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
+        given(userRepository.findByCognitoSub("sub-regular")).willReturn(Optional.of(regularUser));
 
         // when & then
         assertThatThrownBy(() -> matchService.joinMatch(1L, "sub-regular"))
@@ -196,7 +196,7 @@ class MatchServiceTest {
     void joinMatchAlreadyJoined() {
         // given
         given(matchRepository.findById(1L)).willReturn(Optional.of(testMatch));
-        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
+        given(userRepository.findByCognitoSub("sub-regular")).willReturn(Optional.of(regularUser));
         given(participantRepository.findByMatchIdAndUserId(1L, "sub-regular"))
                 .willReturn(Optional.of(new MatchParticipant()));
 

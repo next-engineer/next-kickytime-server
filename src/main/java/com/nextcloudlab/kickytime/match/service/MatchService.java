@@ -5,9 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.nextcloudlab.kickytime.match.dto.MatchCreateRequestDto;
 import com.nextcloudlab.kickytime.match.dto.MatchResponseDto;
@@ -78,10 +76,7 @@ public class MatchService {
         User user =
                 userRepository
                         .findByCognitoSub(cognitoSub)
-                        .orElseThrow(
-                                () ->
-                                        new ResponseStatusException(
-                                                HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+                        .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         // 참여 가능한 상태인지 확인
         if (match.getMatchStatus() != MatchStatus.OPEN) {
