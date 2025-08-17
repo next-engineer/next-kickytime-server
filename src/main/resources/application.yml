@@ -25,6 +25,18 @@ spring:
         jwt:
           issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xI18xw5er}
 
+# Spring Boot Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+
 # 공통 앱 설정 (기본값 포함)
 app:
   cognito:
