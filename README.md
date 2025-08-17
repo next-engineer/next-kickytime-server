@@ -64,6 +64,7 @@
 * **네트워킹**: VPC 멀티 AZ, 퍼블릭/프라이빗 서브넷, NAT 게이트웨이
 * **데이터**: RDS(PostgreSQL)
 * **운영**: CloudWatch 로그, SSM(Systems Manager), KMS
+<img width="1401" height="756" alt="4팀 Project drawio" src="https://github.com/user-attachments/assets/b8e7fb3e-c7b7-4f85-afa2-b0e7e751b1aa" />
 
 
 ---
