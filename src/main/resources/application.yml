@@ -53,3 +53,14 @@ logging:
 
 server:
   port: 8080
+
+# SpringDoc OpenAPI 설정
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  packages-to-scan: com.nextcloudlab.kickytime
+  
