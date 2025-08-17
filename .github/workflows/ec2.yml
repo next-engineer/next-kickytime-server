@@ -1,180 +1,74 @@
-name: EC2 - Deploy (dispatch)
+name: EC2 Deploy (short)
 
 on:
   repository_dispatch:
     types: [deploy-ec2]
-  workflow_dispatch:
-
-concurrency:
-  group: ec2-deploy
-  cancel-in-progress: false
-
-permissions:
-  contents: read
+  workflow_dispatch: {}
 
 env:
   AWS_REGION: ap-northeast-2
-  # ✅ 배포 대상 EC2 리스트(JSON 배열). 필요에 맞게 교체하세요.
-  INSTANCE_IDS_JSON: '["i-08f17d18d83292c07","i-08316767f2bd4a5ed"]'
-
-  # ✅ 앱/컨테이너 설정
-  APP_NAME: kickytime            # 기존 컨테이너 기본 이름 (예: kickytime)
-  CONTAINER_PORT: "8080"         # 컨테이너 내부 포트
-  HOST_PORT_BASE: "8080"         # 기존 컨테이너가 바인드하는 호스트 포트
-  HEALTH_PATH: "/actuator/health" # 헬스체크 경로
-  HEALTH_TIMEOUT_SEC: "180"      # 헬스체크 최대 대기시간
-  ENV_FILE_PATH: ""              # 예: /opt/kickytime/.env (없으면 빈 값)
+  IMAGE: ${{ github.event.client_payload.image_uri || '077672914621.dkr.ecr.ap-northeast-2.amazonaws.com/kickytime-repo:latest' }}
+  TARGET_TAG_KEY: Role
+  TARGET_TAG_VALUE: app
+  PORT: "8080"
+  HEALTH: "/actuator/health"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        instance_id: ${{ fromJson(env.INSTANCE_IDS_JSON) }}
-
-    env:
-      PAYLOAD_IMAGE_URI: ${{ github.event.client_payload.image_uri }}
-      PAYLOAD_TAG:       ${{ github.event.client_payload.tag }}
-      PAYLOAD_BRANCH:    ${{ github.event.client_payload.branch }}
-      PAYLOAD_SHA:       ${{ github.event.client_payload.sha }}
-
     steps:
-      - name: Gate - only deploy for main
-        id: gate
-        run: |
-          if [ "${PAYLOAD_BRANCH}" = "main" ]; then
-            echo "GO=true" >> $GITHUB_OUTPUT
-          else
-            echo "GO=false" >> $GITHUB_OUTPUT
-            echo "Non-deploy branch: ${PAYLOAD_BRANCH}"
-          fi
-
-      - name: Checkout (same commit as build)
-        if: steps.gate.outputs.GO == 'true'
-        uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
-          ref: ${{ env.PAYLOAD_SHA }}
-
-      - name: Configure AWS credentials
-        if: steps.gate.outputs.GO == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Send rolling deploy command via SSM
-        if: steps.gate.outputs.GO == 'true'
-        id: ssm
+      # ✅ 추가된 최소 스텝: 실행중 + 태그(Role=app) + SSM Online 교집합 → ids_list 출력
+      - name: Resolve running + tagged + SSM-online
+        id: resolve
+        shell: bash
         run: |
-          set -e
-
-          TARGET_ID="${{ matrix.instance_id }}"
-          echo "Deploying to instance: $TARGET_ID"
-          
-          # 새 컨테이너가 바인드할 임시 포트(현재 HOST_PORT_BASE+1)
-          NEXT_PORT=$(( ${HOST_PORT_BASE} + 1 ))
-
-          # SSM에 보낼 스크립트를 JSON 안전하게 변환
-          read -r -d '' SCRIPT <<'EOSCRIPT'
-          #!/usr/bin/env bash
           set -euo pipefail
-
-          APP_NAME="${APP_NAME}"
-          IMAGE_URI="${PAYLOAD_IMAGE_URI}"
-          CONTAINER_PORT="${CONTAINER_PORT}"
-          HOST_PORT_BASE="${HOST_PORT_BASE}"
-          NEXT_PORT=$(( HOST_PORT_BASE + 1 ))
-          HEALTH_PATH="${HEALTH_PATH}"
-          HEALTH_TIMEOUT="${HEALTH_TIMEOUT_SEC}"
-          ENV_FILE_PATH="${ENV_FILE_PATH}"
-
-          OLD_NAME="${APP_NAME}"
-          NEW_NAME="${APP_NAME}_new"
-
-          echo "[1/7] ECR 로그인"
-          REGISTRY_HOST="$(echo "$IMAGE_URI" | awk -F'/' '{print $1}')"
-          aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${REGISTRY_HOST}"
-
-          echo "[2/7] 새 이미지 Pull: ${IMAGE_URI}"
-          docker pull "${IMAGE_URI}"
-
-          echo "[3/7] 이전 NEW 컨테이너 정리(있으면)"
-          if docker ps -a --format '{{.Names}}' | grep -q "^${NEW_NAME}$"; then
-            docker rm -f "${NEW_NAME}" || true
+          RUNNING_IDS=$(aws ec2 describe-instances \
+            --region "${AWS_REGION}" \
+            --filters "Name=tag:${TARGET_TAG_KEY},Values=${TARGET_TAG_VALUE}" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[].Instances[].InstanceId' --output text | tr '\t' '\n' || true)
+          SSM_ONLINE_IDS=$(aws ssm describe-instance-information \
+            --region "${AWS_REGION}" \
+            --filters "Key=PingStatus,Values=Online" \
+            --query 'InstanceInformationList[].InstanceId' --output text | tr '\t' '\n' || true)
+          TARGET_IDS=$(comm -12 <(printf '%s\n' $RUNNING_IDS | sort) <(printf '%s\n' $SSM_ONLINE_IDS | sort) || true)
+          if [ -z "${TARGET_IDS:-}" ]; then
+            echo "No targets (running+tagged+ssm-online)."; exit 1
           fi
+          echo "ids_list=$(printf '%s ' $TARGET_IDS)" >> "$GITHUB_OUTPUT"
 
-          echo "[4/7] 새 컨테이너 기동: ${NEW_NAME} (host ${NEXT_PORT} -> container ${CONTAINER_PORT})"
-          RUN_ENV_OPTS=()
-          if [ -n "${ENV_FILE_PATH}" ]; then
-            RUN_ENV_OPTS+=( --env-file "${ENV_FILE_PATH}" )
-          fi
-
-          docker run -d \
-            --name "${NEW_NAME}" \
-            -p "${NEXT_PORT}:${CONTAINER_PORT}" \
-            "${RUN_ENV_OPTS[@]}" \
-            "${IMAGE_URI}"
-
-          echo "[5/7] 헬스체크: http://127.0.0.1:${NEXT_PORT}${HEALTH_PATH} (timeout: ${HEALTH_TIMEOUT}s)"
-          SECS=0
-          until curl -fsS "http://127.0.0.1:${NEXT_PORT}${HEALTH_PATH}" >/dev/null 2>&1; do
-            sleep 3
-            SECS=$(( SECS + 3 ))
-            if [ "${SECS}" -ge "${HEALTH_TIMEOUT}" ]; then
-              echo "❌ 새 컨테이너 헬스체크 실패. 로그:"
-              docker logs --tail 200 "${NEW_NAME}" || true
-              exit 1
-            fi
-          done
-          echo "✅ 새 컨테이너 Healthy"
-
-          echo "[6/7] 기존 컨테이너 ${OLD_NAME} 종료/삭제 및 포트 스위칭"
-          if docker ps -a --format '{{.Names}}' | grep -q "^${OLD_NAME}$"; then
-            docker rm -f "${OLD_NAME}" || true
-          fi
-
-          # 새 컨테이너를 기본 이름으로 승격
-          docker rename "${NEW_NAME}" "${OLD_NAME}"
-
-          echo "[7/7] 청소 (Dangling Images/Containers)"
-          docker system prune -f || true
-
-          echo "🎉 롤링 완료: $(docker ps --filter "name=${OLD_NAME}" --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}')"
-          EOSCRIPT
-
-          # jq로 이스케이프하여 commands에 넣기
-          JSON_SCRIPT=$(jq -Rn --arg s "$SCRIPT" '$s')
-
-          CMD_ID=$(aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --instance-ids "$TARGET_ID" \
-            --parameters commands="[$JSON_SCRIPT]" \
-            --comment "Rolling deploy ${APP_NAME} -> ${PAYLOAD_IMAGE_URI}" \
-            --timeout-seconds 1800 \
-            --query "Command.CommandId" \
-            --output text)
-
-          echo "SSM CommandId: ${CMD_ID}"
-          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$TARGET_ID"
-          
-          # 실패 시 로그 출력
-          STATUS=$(aws ssm list-command-invocations --command-id "$CMD_ID" --instance-id "$TARGET_ID" --details \
-                   --query "CommandInvocations[0].Status" --output text)
-          echo "SSM Status: $STATUS"
-          if [ "$STATUS" != "Success" ]; then
-            echo "---- SSM Output ----"
-            aws ssm list-command-invocations --command-id "$CMD_ID" --instance-id "$TARGET_ID" --details \
-              --query "CommandInvocations[0].CommandPlugins[0].{StdOut:Output,StdErr:StandardErrorContent}" --output json
-            exit 1
-          fi
-
-      - name: Summary
-        if: steps.gate.outputs.GO == 'true'
+      - name: Run on all tagged instances via SSM (by instance-ids)
+        env:
+          IDS_LIST: ${{ steps.resolve.outputs.ids_list }}
         run: |
-          echo "### ✅ EC2 Rolling Deploy Completed" >> $GITHUB_STEP_SUMMARY
-          echo "- Instance: \`${{ matrix.instance_id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Image:    \`${PAYLOAD_IMAGE_URI}\`"     >> $GITHUB_STEP_SUMMARY
-          echo "- Branch:   \`${PAYLOAD_BRANCH}\`"        >> $GITHUB_STEP_SUMMARY
-          echo "- Commit:   \`${PAYLOAD_SHA}\`"           >> $GITHUB_STEP_SUMMARY
+          echo "Deploying image: $IMAGE"
+          
+          aws ssm send-command \
+            --region $AWS_REGION \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids $IDS_LIST \
+            --cloud-watch-output-config CloudWatchOutputEnabled=true,CloudWatchLogGroupName=/aws/ssm/kickytime \
+            --parameters '{
+              "commands": [
+                "set -e",
+                "command -v docker >/dev/null 2>&1 || (dnf -y install docker && systemctl enable --now docker)",
+                "REG=$(echo \"'$IMAGE'\" | cut -d/ -f1)",
+                "aws ecr get-login-password --region '$AWS_REGION' | docker login --username AWS --password-stdin $REG",
+                "docker rm -f kickytime || true",
+                "docker pull \"'$IMAGE'\"",
+                "docker run -d --name kickytime -p '$PORT':'$PORT' \\",
+                "  -e SPRING_DATASOURCE_URL=\"'${{ secrets.DB_URL }}'\" \\",
+                "  -e SPRING_DATASOURCE_USERNAME=\"'${{ secrets.DB_USERNAME }}'\" \\",
+                "  -e SPRING_DATASOURCE_PASSWORD=\"'${{ secrets.DB_PASSWORD }}'\" \\",
+                "  \"'$IMAGE'\"",
+                "for i in $(seq 1 60); do curl -fsS http://127.0.0.1:'$PORT$HEALTH' && break || sleep 2; done"
+              ],
+              "executionTimeout": ["1800"]
+            }' \
+            --comment "Deploy $IMAGE"
