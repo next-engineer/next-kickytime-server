@@ -1,9 +1,8 @@
 name: ECR - Build & Push
 
 on:
-  workflow_run:
-    workflows: ["CI"]   # ← 여기 'CI 워크플로우의 name'을 정확히 넣어줘
-    types: [completed]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -11,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write   # repository_dispatch에 필요
 
 env:
   AWS_REGION: ap-northeast-2
@@ -19,18 +18,12 @@ env:
 
 jobs:
   build_and_push:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'develop' }}
     runs-on: ubuntu-latest
-    env:
-      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
 
     steps:
-      - name: Checkout target commit (from CI)
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
-      # 🔥 NEW: Docker Buildx 설정 (멀티 플랫폼 지원)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -45,11 +38,10 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Set TAG from head_sha
+      - name: Set TAG from commit SHA
         id: tag
-        run: echo "TAG=${HEAD_SHA::12}" >> $GITHUB_OUTPUT
+        run: echo "TAG=${GITHUB_SHA::12}" >> $GITHUB_OUTPUT
 
-      # 🔥 MODIFIED: ARM64 빌드로 변경
       - name: Build & Push ARM64 image
         id: build
         run: |
@@ -59,9 +51,6 @@ jobs:
           IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:$TAG"
           LATEST_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
 
-          echo "Building ARM64 image: $IMAGE_URI (commit=$HEAD_SHA)"
-          
-          # ARM64 플랫폼으로 빌드 및 푸시
           docker buildx build \
             --platform linux/arm64 \
             --push \
@@ -70,32 +59,36 @@ jobs:
             .
 
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_OUTPUT
-          echo "Successfully built and pushed ARM64 image"
 
-      # 🔥 NEW: 이미지 아키텍처 확인
       - name: Verify ARM64 architecture
         run: |
           REGISTRY="${{ steps.ecr.outputs.registry }}"
           TAG="${{ steps.tag.outputs.TAG }}"
           IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:$TAG"
-          
-          echo "=== Verifying image architecture ==="
-          docker manifest inspect "$IMAGE_URI" | grep -A 10 '"architecture"'
-          
-          # ARM64 확인
           ARCH=$(docker manifest inspect "$IMAGE_URI" | jq -r '.manifests[0].platform.architecture // .architecture')
-          if [ "$ARCH" = "arm64" ]; then
-            echo "✅ Confirmed: Image is ARM64"
-          else
-            echo "❌ Error: Image architecture is $ARCH, expected arm64"
-            exit 1
-          fi
+          [ "$ARCH" = "arm64" ] || (echo "Expected arm64, got $ARCH" && exit 1)
+
+      # repository_dispatch 전송 + HTTP 204 확인
+      - name: Trigger ECS Deploy via repository_dispatch
+        if: success()
+        run: |
+          set -e
+          image_uri="${{ steps.build.outputs.IMAGE_URI }}"
+          tag="${{ steps.tag.outputs.TAG }}"
+          branch="${{ github.ref_name }}"
+          sha="${{ github.sha }}"
+
+          resp=$(curl -s -o /tmp/resp.txt -w "%{http_code}" -X POST \
+            "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"event_type\":\"deploy-ecs\",\"client_payload\":{\"image_uri\":\"$image_uri\",\"tag\":\"$tag\",\"branch\":\"$branch\",\"sha\":\"$sha\"}}")
+          [ "$resp" = "204" ] || (cat /tmp/resp.txt && exit 1)
 
       - name: Summary
         run: |
-          echo "### ✅ ECR Push Completed (ARM64)" >> $GITHUB_STEP_SUMMARY
-          echo "- Repo: \`${{ env.ECR_REPOSITORY }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Tag: \`${{ steps.tag.outputs.TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Commit: \`${{ env.HEAD_SHA }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Platform: \`linux/arm64\`" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ ECR Push & Dispatch OK" >> $GITHUB_STEP_SUMMARY
+          echo "- Repo:  \`${{ env.ECR_REPOSITORY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag:   \`${{ steps.tag.outputs.TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Image: \`${{ steps.build.outputs.IMAGE_URI }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Sent:  \`repository_dispatch: deploy-ecs\`" >> $GITHUB_STEP_SUMMARY

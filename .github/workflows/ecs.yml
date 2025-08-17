@@ -1,13 +1,12 @@
-name: ECS - Deploy
+name: ECS - Deploy (dispatch)
 
 on:
-  workflow_run:
-    workflows: ["ECR - Build & Push"]  # ← ECR 워크플로우 'name' 정확히 입력
-    types: [completed]
+  repository_dispatch:
+    types: [deploy-ecs]
   workflow_dispatch:
 
 concurrency:
-  group: ecs-main
+  group: ecs-deploy
   cancel-in-progress: false
 
 permissions:
@@ -15,74 +14,69 @@ permissions:
 
 env:
   AWS_REGION: ap-northeast-2
-  ECR_REPOSITORY: kickytime-repo        # ECR 리포 이름
-  ECS_CLUSTER: kickytime-cluster        # ECS 클러스터 이름
-  ECS_SERVICE: kickytime-task-service   # ECS 서비스 이름
-  TASK_FAMILY: kickytime-task           # 태스크 정의 패밀리
-  CONTAINER_NAME: kickytime-ecr         # TD 안 컨테이너 이름(정확히 일치)
+  ECR_REPOSITORY: kickytime-repo
+  ECS_CLUSTER: kickytime-cluster
+  ECS_SERVICE: kickytime-task-service
+  TASK_FAMILY: kickytime-task
+  CONTAINER_NAME: kickytime-ecr
 
 jobs:
   deploy:
-    # ECR 워크플로우가 '성공'이고, 대상 브랜치가 main일 때만 실행
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'develop' }}
     runs-on: ubuntu-latest
     env:
-      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      PAYLOAD_IMAGE_URI: ${{ github.event.client_payload.image_uri }}
+      PAYLOAD_TAG:       ${{ github.event.client_payload.tag }}
+      PAYLOAD_BRANCH:    ${{ github.event.client_payload.branch }}
+      PAYLOAD_SHA:       ${{ github.event.client_payload.sha }}
 
     steps:
-      - name: Checkout same commit (from ECR build)
+      - name: Gate - only deploy for main
+        id: gate
+        run: |
+          if [ "$PAYLOAD_BRANCH" = "main" ]; then
+            echo "GO=true" >> $GITHUB_OUTPUT
+          else
+            echo "GO=false" >> $GITHUB_OUTPUT
+            echo "Non-deploy branch: $PAYLOAD_BRANCH"
+          fi
+
+      - name: Checkout (same commit as build)
+        if: steps.gate.outputs.GO == 'true'
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.HEAD_SHA }}
+          ref: ${{ env.PAYLOAD_SHA }}
 
-      - name: Configure AWS credentials (Access Keys)
+      - name: Configure AWS credentials
+        if: steps.gate.outputs.GO == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region:            ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        if: steps.gate.outputs.GO == 'true'
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      # ECR에서 사용한 것과 동일한 태그(HEAD_SHA 12자리)로 이미지 URI를 재구성
-      - name: Compute IMAGE_URI (same tag as ECR)
-        id: tag
-        run: |
-          TAG=${HEAD_SHA::12}
-          echo "TAG=$TAG" >> $GITHUB_OUTPUT
-          echo "IMAGE_URI=${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${TAG}" >> $GITHUB_OUTPUT
-
       - name: Describe current Task Definition
+        if: steps.gate.outputs.GO == 'true'
         run: |
           aws ecs describe-task-definition \
             --task-definition "${{ env.TASK_FAMILY }}" \
             --query 'taskDefinition' > td.json
 
-      # 🔥 ARM64 아키텍처 명시적 설정 추가
-      - name: Patch image & ensure ARM64 platform (keep env/secrets)
+      - name: Patch image & ensure ARM64 platform
+        if: steps.gate.outputs.GO == 'true'
         run: |
-          jq --arg NAME "${{ env.CONTAINER_NAME }}" --arg IMG "${{ steps.tag.outputs.IMAGE_URI }}" '
+          jq --arg NAME "${{ env.CONTAINER_NAME }}" --arg IMG "${PAYLOAD_IMAGE_URI}" '
             .containerDefinitions |= map(if .name == $NAME then .image = $IMG else . end)
-            | .runtimePlatform = {
-                "cpuArchitecture": "ARM64",
-                "operatingSystemFamily": "LINUX"
-              }
+            | .runtimePlatform = {"cpuArchitecture":"ARM64","operatingSystemFamily":"LINUX"}
             | del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
           ' td.json > td-new.json
 
-      # 디버깅: 태스크 정의 내용 확인
-      - name: Verify Task Definition content
-        run: |
-          echo "=== Task Definition Platform & Container Info ==="
-          jq '.runtimePlatform' td-new.json
-          jq '.containerDefinitions[] | {name: .name, image: .image, cpu: .cpu, memory: .memory}' td-new.json
-
       - name: Register new Task Definition
+        if: steps.gate.outputs.GO == 'true'
         id: register
         run: |
           NEW_TD_ARN=$(aws ecs register-task-definition \
@@ -90,9 +84,9 @@ jobs:
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "TASK_DEF_ARN=$NEW_TD_ARN" >> $GITHUB_OUTPUT
-          echo "New TD (ARM64): $NEW_TD_ARN"
 
       - name: Update service (rolling deployment)
+        if: steps.gate.outputs.GO == 'true'
         run: |
           aws ecs update-service \
             --cluster "${{ env.ECS_CLUSTER }}" \
@@ -100,101 +94,25 @@ jobs:
             --task-definition "${{ steps.register.outputs.TASK_DEF_ARN }}" \
             --force-new-deployment
 
-      # 서비스 안정화 대기 시간을 줄이고 실패 시 디버깅 정보 수집
-      - name: Wait for deployment (with timeout)
-        id: wait_deploy
+      - name: Wait for deployment (timeout 10m)
+        if: steps.gate.outputs.GO == 'true'
+        id: wait
         continue-on-error: true
         run: |
           timeout 600 aws ecs wait services-stable \
             --cluster "${{ env.ECS_CLUSTER }}" \
             --services "${{ env.ECS_SERVICE }}" || echo "WAIT_FAILED=true" >> $GITHUB_OUTPUT
 
-      # 배포 실패 시 디버깅 정보 수집
-      - name: Debug failed deployment
-        if: steps.wait_deploy.outputs.WAIT_FAILED == 'true'
+      - name: Summary
+        if: steps.gate.outputs.GO == 'true'
         run: |
-          echo "🔍 Deployment failed, collecting debug info..."
-          
-          # 서비스 상태 확인
-          echo "=== Service Description ==="
-          aws ecs describe-services \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --services "${{ env.ECS_SERVICE }}"
-          
-          # 최근 태스크들 상태 확인
-          echo "=== Recent Tasks ==="
-          aws ecs list-tasks \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --service-name "${{ env.ECS_SERVICE }}" \
-            --max-items 5 \
-            --query 'taskArns[]' --output text | \
-          xargs -I {} aws ecs describe-tasks \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --tasks {} \
-            --query 'tasks[0].{TaskArn:taskArn,LastStatus:lastStatus,HealthStatus:healthStatus,StoppedReason:stoppedReason,Platform:runtimePlatform}'
-          
-          # 서비스 이벤트 확인
-          echo "=== Service Events ==="
-          aws ecs describe-services \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --services "${{ env.ECS_SERVICE }}" \
-            --query 'services[0].events[:10]'
-
-      - name: Check task definition details
-        if: steps.wait_deploy.outputs.WAIT_FAILED == 'true'
-        run: |
-          echo "=== Task Definition Details ==="
-          aws ecs describe-task-definition \
-            --task-definition "${{ steps.register.outputs.TASK_DEF_ARN }}" \
-            --query 'taskDefinition.{
-              Family: family,
-              Revision: revision,
-              Cpu: cpu,
-              Memory: memory,
-              Platform: runtimePlatform,
-              Containers: containerDefinitions[].{
-                Name: name,
-                Image: image,
-                Cpu: cpu,
-                Memory: memory,
-                Essential: essential,
-                PortMappings: portMappings,
-                HealthCheck: healthCheck
-              }
-            }'
-
-      - name: Rollback on failure
-        if: steps.wait_deploy.outputs.WAIT_FAILED == 'true'
-        run: |
-          echo "🔄 Rolling back to previous task definition..."
-          
-          # 이전 태스크 정의 찾기
-          PREV_TD=$(aws ecs describe-services \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --services "${{ env.ECS_SERVICE }}" \
-            --query 'services[0].taskDefinition' \
-            --output text)
-          
-          echo "Rolling back to: $PREV_TD"
-          
-          aws ecs update-service \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --service "${{ env.ECS_SERVICE }}" \
-            --task-definition "$PREV_TD"
-
-      - name: Final status and summary
-        run: |
-          if [ "${{ steps.wait_deploy.outputs.WAIT_FAILED }}" == "true" ]; then
+          if [ "${{ steps.wait.outputs.WAIT_FAILED }}" == "true" ]; then
             echo "### ❌ ECS Deploy Failed" >> $GITHUB_STEP_SUMMARY
-            echo "Check the debug output above for details." >> $GITHUB_STEP_SUMMARY
-            echo "- Issue: Likely ARM64 architecture mismatch" >> $GITHUB_STEP_SUMMARY
-            echo "- Next step: Verify ECR build uses ARM64 platform" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
             echo "### ✅ ECS Deploy Completed (ARM64)" >> $GITHUB_STEP_SUMMARY
-            echo "- Cluster: \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Service: \`${{ env.ECS_SERVICE }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- TD: \`${{ steps.register.outputs.TASK_DEF_ARN }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Image: \`${{ steps.tag.outputs.IMAGE_URI }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Platform: \`ARM64/LINUX\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Cluster: \`${{ env.ECS_CLUSTER }}\`"
+            echo "- Service: \`${{ env.ECS_SERVICE }}\`"
+            echo "- TD: \`${{ steps.register.outputs.TASK_DEF_ARN }}\`"
+            echo "- Image: \`${PAYLOAD_IMAGE_URI}\`"
           fi
