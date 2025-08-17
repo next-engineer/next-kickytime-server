@@ -1,0 +1,134 @@
+name: ECR - Build & Push
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ecr-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # repository_dispatch에 필요
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: kickytime-repo
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Ensure jq is installed
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
+      # 멀티아치 에뮬레이션(QEMU) 세팅
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials (Access Keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set TAG from commit SHA
+        id: tag
+        run: echo "TAG=${GITHUB_SHA::12}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push multi-arch image
+        id: build
+        run: |
+          set -e
+          REGISTRY="${{ steps.ecr.outputs.registry }}"
+          TAG="${{ steps.tag.outputs.TAG }}"
+          IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:$TAG"
+          LATEST_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
+
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --push \
+            --tag "$IMAGE_URI" \
+            --tag "$LATEST_URI" \
+            .
+
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+      - name: Verify multi-arch manifest (Fixed)
+        run: |
+          set -e
+          REGISTRY="${{ steps.ecr.outputs.registry }}"
+          TAG="${{ steps.tag.outputs.TAG }}"
+          IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:$TAG"
+
+          ARCHES=$(docker manifest inspect "$IMAGE_URI" | jq -r '.manifests[]?.platform | "\(.os)/\(.architecture)"' | sort -u)
+          echo "Manifests:"
+          echo "$ARCHES"
+
+          # 정확한 매칭으로 수정
+          if ! echo "$ARCHES" | grep -x 'linux/amd64' > /dev/null; then
+            echo "❌ Missing linux/amd64 in manifest"
+            echo "Available platforms: $ARCHES"
+            exit 1
+          fi
+
+          if ! echo "$ARCHES" | grep -x 'linux/arm64' > /dev/null; then
+            echo "❌ Missing linux/arm64 in manifest"
+            echo "Available platforms: $ARCHES"
+            exit 1
+          fi
+
+          echo "✅ Both linux/amd64 and linux/arm64 found"
+
+      # repository_dispatch 전송 + HTTP 204 확인
+      - name: Trigger ECS/EC2 Deploy via repository_dispatch
+        if: success()
+        run: |
+          set -e
+          image_uri="${{ steps.build.outputs.IMAGE_URI }}"
+          tag="${{ steps.tag.outputs.TAG }}"
+          branch="${{ github.ref_name }}"
+          sha="${{ github.sha }}"
+
+          # ECS
+          resp=$(curl -s -o /tmp/resp.txt -w "%{http_code}" -X POST \
+            "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"event_type\":\"deploy-ecs\",\"client_payload\":{\"image_uri\":\"$image_uri\",\"tag\":\"$tag\",\"branch\":\"$branch\",\"sha\":\"$sha\"}}")
+          [ "$resp" = "204" ] || (echo "ECS dispatch failed:" && cat /tmp/resp.txt && exit 1)
+
+          # EC2
+          resp2=$(curl -s -o /tmp/resp2.txt -w "%{http_code}" -X POST \
+            "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"event_type\":\"deploy-ec2\",\"client_payload\":{\"image_uri\":\"$image_uri\",\"tag\":\"$tag\",\"branch\":\"$branch\",\"sha\":\"$sha\"}}")
+          [ "$resp2" = "204" ] || (echo "EC2 dispatch failed:" && cat /tmp/resp2.txt && exit 1)
+
+      - name: Summary
+        run: |
+          echo "### ✅ ECR Push & Dispatch OK (Multi-arch)" >> $GITHUB_STEP_SUMMARY
+          echo "- Repo:   \`${{ env.ECR_REPOSITORY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag:    \`${{ steps.tag.outputs.TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Image:  \`${{ steps.build.outputs.IMAGE_URI }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Arches: \`linux/amd64, linux/arm64\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Sent:   \`repository_dispatch: deploy-ecs\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Sent:   \`repository_dispatch: deploy-ec2\`" >> $GITHUB_STEP_SUMMARY

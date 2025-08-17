@@ -1,0 +1,118 @@
+name: ECS - Deploy (dispatch)
+
+on:
+  repository_dispatch:
+    types: [deploy-ecs]
+  workflow_dispatch:
+
+concurrency:
+  group: ecs-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: kickytime-repo
+  ECS_CLUSTER: kickytime-cluster
+  ECS_SERVICE: kickytime-task-service
+  TASK_FAMILY: kickytime-task
+  CONTAINER_NAME: kickytime-ecr
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PAYLOAD_IMAGE_URI: ${{ github.event.client_payload.image_uri }}
+      PAYLOAD_TAG:       ${{ github.event.client_payload.tag }}
+      PAYLOAD_BRANCH:    ${{ github.event.client_payload.branch }}
+      PAYLOAD_SHA:       ${{ github.event.client_payload.sha }}
+
+    steps:
+      - name: Gate - only deploy for main
+        id: gate
+        run: |
+          if [ "$PAYLOAD_BRANCH" = "main" ]; then
+            echo "GO=true" >> $GITHUB_OUTPUT
+          else
+            echo "GO=false" >> $GITHUB_OUTPUT
+            echo "Non-deploy branch: $PAYLOAD_BRANCH"
+          fi
+
+      - name: Checkout (same commit as build)
+        if: steps.gate.outputs.GO == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PAYLOAD_SHA }}
+
+      - name: Configure AWS credentials
+        if: steps.gate.outputs.GO == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: steps.gate.outputs.GO == 'true'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Describe current Task Definition
+        if: steps.gate.outputs.GO == 'true'
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${{ env.TASK_FAMILY }}" \
+            --query 'taskDefinition' > td.json
+
+      - name: Patch image & ensure ARM64 platform
+        if: steps.gate.outputs.GO == 'true'
+        run: |
+          jq --arg NAME "${{ env.CONTAINER_NAME }}" --arg IMG "${PAYLOAD_IMAGE_URI}" '
+            .containerDefinitions |= map(if .name == $NAME then .image = $IMG else . end)
+            | .runtimePlatform = {"cpuArchitecture":"ARM64","operatingSystemFamily":"LINUX"}
+            | del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
+          ' td.json > td-new.json
+
+      - name: Register new Task Definition
+        if: steps.gate.outputs.GO == 'true'
+        id: register
+        run: |
+          NEW_TD_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://td-new.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          echo "TASK_DEF_ARN=$NEW_TD_ARN" >> $GITHUB_OUTPUT
+
+      - name: Update service (rolling deployment)
+        if: steps.gate.outputs.GO == 'true'
+        run: |
+          aws ecs update-service \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --service "${{ env.ECS_SERVICE }}" \
+            --task-definition "${{ steps.register.outputs.TASK_DEF_ARN }}" \
+            --force-new-deployment
+
+      - name: Wait for deployment (timeout 10m)
+        if: steps.gate.outputs.GO == 'true'
+        id: wait
+        continue-on-error: true
+        run: |
+          timeout 600 aws ecs wait services-stable \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "${{ env.ECS_SERVICE }}" || echo "WAIT_FAILED=true" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        if: steps.gate.outputs.GO == 'true'
+        run: |
+          if [ "${{ steps.wait.outputs.WAIT_FAILED }}" == "true" ]; then
+            echo "### ❌ ECS Deploy Failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "### ✅ ECS Deploy Completed (ARM64)" >> $GITHUB_STEP_SUMMARY
+            echo "- Cluster: \`${{ env.ECS_CLUSTER }}\`"
+            echo "- Service: \`${{ env.ECS_SERVICE }}\`"
+            echo "- TD: \`${{ steps.register.outputs.TASK_DEF_ARN }}\`"
+            echo "- Image: \`${PAYLOAD_IMAGE_URI}\`"
+          fi

@@ -1,0 +1,74 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.4'
+	id 'io.spring.dependency-management' version '1.1.7'
+
+	// code
+	id 'com.diffplug.spotless' version '6.25.0'
+	id 'checkstyle'
+}
+
+group = 'com.nextcloudlab.kickytime'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+checkstyle {
+	toolVersion = '10.17.0'
+	// 프로젝트 내 규칙 파일 경로
+	configFile = file('config/checkstyle/checkstyle.xml')
+}
+
+spotless {
+	java {
+		target("**/*.java") // 포매팅할 파일의 대상 지정(프로젝트 하위 모든 디렉토리의 .java 파일)
+		googleJavaFormat().aosp() // Google Java Format을 사용해서 포매팅(AOSP 스타일은 기본 Google 스타일보다 줄 바꿈을 좀 더 많이 하고, 줄 길이에 더 민감하게 반응함)
+		importOrder('java', 'javax', 'org', 'com') // import 문 정리 순서 지정(디폴트 설정(알파벳 순, static import 아래)이 적용)
+		removeUnusedImports() // 사용하지 않는 import 구문 제거.
+		trimTrailingWhitespace() // 각 라인 끝에 있는 불필요한 공백 제거.
+		endWithNewline() // 파일 끝에 빈 줄 한 줄 추가.
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation("software.amazon.awssdk:cognitoidentityprovider:2.25.61")
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.assertj:assertj-core'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'com.h2database:h2'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+tasks.named('check') {
+	dependsOn 'spotlessCheck', 'checkstyleMain', 'checkstyleTest'
+}

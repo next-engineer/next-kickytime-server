@@ -1,0 +1,74 @@
+name: EC2 Deploy (short)
+
+on:
+  repository_dispatch:
+    types: [deploy-ec2]
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: ap-northeast-2
+  IMAGE: ${{ github.event.client_payload.image_uri || '077672914621.dkr.ecr.ap-northeast-2.amazonaws.com/kickytime-repo:latest' }}
+  TARGET_TAG_KEY: Role
+  TARGET_TAG_VALUE: app
+  PORT: "8080"
+  HEALTH: "/actuator/health"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ✅ 추가된 최소 스텝: 실행중 + 태그(Role=app) + SSM Online 교집합 → ids_list 출력
+      - name: Resolve running + tagged + SSM-online
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUNNING_IDS=$(aws ec2 describe-instances \
+            --region "${AWS_REGION}" \
+            --filters "Name=tag:${TARGET_TAG_KEY},Values=${TARGET_TAG_VALUE}" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[].Instances[].InstanceId' --output text | tr '\t' '\n' || true)
+          SSM_ONLINE_IDS=$(aws ssm describe-instance-information \
+            --region "${AWS_REGION}" \
+            --filters "Key=PingStatus,Values=Online" \
+            --query 'InstanceInformationList[].InstanceId' --output text | tr '\t' '\n' || true)
+          TARGET_IDS=$(comm -12 <(printf '%s\n' $RUNNING_IDS | sort) <(printf '%s\n' $SSM_ONLINE_IDS | sort) || true)
+          if [ -z "${TARGET_IDS:-}" ]; then
+            echo "No targets (running+tagged+ssm-online)."; exit 1
+          fi
+          echo "ids_list=$(printf '%s ' $TARGET_IDS)" >> "$GITHUB_OUTPUT"
+
+      - name: Run on all tagged instances via SSM (by instance-ids)
+        env:
+          IDS_LIST: ${{ steps.resolve.outputs.ids_list }}
+        run: |
+          echo "Deploying image: $IMAGE"
+          
+          aws ssm send-command \
+            --region $AWS_REGION \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids $IDS_LIST \
+            --cloud-watch-output-config CloudWatchOutputEnabled=true,CloudWatchLogGroupName=/aws/ssm/kickytime \
+            --parameters '{
+              "commands": [
+                "set -e",
+                "command -v docker >/dev/null 2>&1 || (dnf -y install docker && systemctl enable --now docker)",
+                "REG=$(echo \"'$IMAGE'\" | cut -d/ -f1)",
+                "aws ecr get-login-password --region '$AWS_REGION' | docker login --username AWS --password-stdin $REG",
+                "docker rm -f kickytime || true",
+                "docker pull \"'$IMAGE'\"",
+                "docker run -d --name kickytime -p '$PORT':'$PORT' \\",
+                "  -e SPRING_DATASOURCE_URL=\"'${{ secrets.DB_URL }}'\" \\",
+                "  -e SPRING_DATASOURCE_USERNAME=\"'${{ secrets.DB_USERNAME }}'\" \\",
+                "  -e SPRING_DATASOURCE_PASSWORD=\"'${{ secrets.DB_PASSWORD }}'\" \\",
+                "  \"'$IMAGE'\"",
+                "for i in $(seq 1 60); do curl -fsS http://127.0.0.1:'$PORT$HEALTH' && break || sleep 2; done"
+              ],
+              "executionTimeout": ["1800"]
+            }' \
+            --comment "Deploy $IMAGE"

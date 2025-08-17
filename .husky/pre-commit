@@ -1,0 +1,9 @@
+#!/bin/bash
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "💙 Running Spotless..."
+./gradlew spotlessApply
+
+echo "💙 Running Gradle Check (includes Checkstyle)..."
+./gradlew -x test spotlessCheck checkstyleMain checkstyleTest || exit 1
+# npm test
