@@ -19,20 +19,11 @@
 
 ---
 
-[![Docs: Wiki](https://img.shields.io/badge/docs-Wiki-0366d6)](../../wiki)
+[![Docs: Wiki](https://img.shields.io/badge/docs-Wiki-0366d6)](https://github.com/next-engineer/next-kickytime-server/wiki)
 
 > 자세한 운영 가이드는 GitHub **Wiki**에서 확인하세요.
 
-### 📚 Wiki 빠른 링크
-
-* [Home](../../wiki)
-* [API 문서](../../wiki/API-문서)
-* [브랜치 전략](../../wiki/브랜치-전략)
-* [버전 관리 전략](../../wiki/버전-관리-전략)
-* [이슈 템플릿 가이드](../../wiki/이슈-템플릿-가이드)
-* [커밋 메시지 규칙](../../wiki/커밋-메시지-규칙)
-* [코드 스타일 자동화 설정](../../wiki/코드-스타일-자동화-설정)
-* [풀리퀘스트 템플릿](../../wiki/풀리퀘스트-템플릿)
+### [📚 Wiki 빠른 링크](https://github.com/next-engineer/next-kickytime-server/wiki)
 
 ---
 
@@ -64,8 +55,7 @@
 * **네트워킹**: VPC 멀티 AZ, 퍼블릭/프라이빗 서브넷, NAT 게이트웨이
 * **데이터**: RDS(PostgreSQL)
 * **운영**: CloudWatch 로그, SSM(Systems Manager), KMS
-<img width="1401" height="756" alt="4팀 Project drawio" src="https://github.com/user-attachments/assets/b8e7fb3e-c7b7-4f85-afa2-b0e7e751b1aa" />
-
+<img width="1401" height="756" alt="4팀 Project drawio" src="https://github.com/user-attachments/assets/4dbbc365-4d07-4dbf-a0bb-aa4bcb6d6049" />
 
 ---
 
@@ -102,7 +92,7 @@
 * `DELETE /api/matches/{matchId}` – (관리자) 매칭 삭제
 
 
-자세히 보기: [API 문서](../../wiki/API-문서)
+자세히 보기: [API 문서](https://github.com/next-engineer/next-kickytime-server/wiki/API-문서)
 
 ---
 
@@ -165,7 +155,7 @@ app:
 * **파이프라인**: GitHub Actions – 빌드/테스트 → 이미지 푸시 → 서비스 업데이트, (FE 별도) S3/CloudFront 정적 배포
 * **운영/보안**: CloudWatch 로깅, VPC 분리, SG 최소권한, SSM, KMS
 
-자세히 보기: [버전 관리 전략](../../wiki/버전-관리-전략)
+자세히 보기: [버전 관리 전략](https://github.com/next-engineer/next-kickytime-server/wiki/버전-관리-전략)
 
 ---
 
@@ -177,8 +167,8 @@ app:
 * **PR/이슈 템플릿**: Wiki 제공 템플릿 사용
 
 자세히 보기:
-- [브랜치 전략](../../wiki/브랜치-전략)
-- [커밋 메시지 규칙](../../wiki/커밋-메시지-규칙)
-- [이슈 템플릿 가이드](../../wiki/이슈-템플릿-가이드)
-- [풀리퀘스트 템플릿](../../wiki/풀리퀘스트-템플릿)
-- [코드 스타일 자동화 설정](../../wiki/코드-스타일-자동화-설정)
+- [브랜치 전략](https://github.com/next-engineer/next-kickytime-server/wiki/브랜치-전략)
+- [커밋 메시지 규칙](https://github.com/next-engineer/next-kickytime-server/wiki/커밋-메시지-규칙)
+- [이슈 템플릿 가이드](https://github.com/next-engineer/next-kickytime-server/wiki/이슈-템플릿-가이드)
+- [풀리퀘스트 템플릿](https://github.com/next-engineer/next-kickytime-server/wiki/풀리퀘스트-템플릿)
+- [코드 스타일 자동화 설정](https://github.com/next-engineer/next-kickytime-server/wiki/코드-스타일-자동화-설정)
