@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nextcloudlab.kickytime.match.dto.MatchCreateRequestDto;
 import com.nextcloudlab.kickytime.match.dto.MatchResponseDto;
@@ -17,7 +18,6 @@ import com.nextcloudlab.kickytime.match.repository.MatchRepository;
 import com.nextcloudlab.kickytime.user.entity.RoleEnum;
 import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.repository.UserRepository;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MatchService {
