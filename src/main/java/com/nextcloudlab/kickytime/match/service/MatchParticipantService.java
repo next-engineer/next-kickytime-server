@@ -13,11 +13,11 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MatchParticipantService {
 
     private final MatchParticipantRepository matchParticipantRepository;
 
+    @Transactional(readOnly = true)
     public MyMatchesResponse getMyParticipant(String cognitoSub) {
 
         List<MyMatchesResponse.MatchInfo> matches =
