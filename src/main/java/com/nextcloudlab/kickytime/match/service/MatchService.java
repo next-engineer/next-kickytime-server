@@ -42,14 +42,14 @@ public class MatchService {
     public List<MatchResponseDto> getAllMatches() {
         List<Match> matches = matchRepository.findAllByOrderByMatchDateTimeDesc();
 
-        return matches.stream().map(MatchResponseDto::new).collect(Collectors.toList());
+        return matches.stream().map(MatchResponseDto::from).collect(Collectors.toList());
     }
 
     // 경기 개설
     public void createMatch(MatchCreateRequestDto requestDto) {
         User user =
                 userRepository
-                        .findById(requestDto.getCreatedBy())
+                        .findById(requestDto.createdBy())
                         .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         if (user.getRole() != RoleEnum.ADMIN) {
@@ -58,9 +58,9 @@ public class MatchService {
 
         Match match = new Match();
         match.setMatchStatus(MatchStatus.OPEN);
-        match.setMatchDateTime(requestDto.getMatchDateTime());
-        match.setLocation(requestDto.getLocation());
-        match.setMaxPlayers(requestDto.getMaxPlayers());
+        match.setMatchDateTime(requestDto.matchDateTime());
+        match.setLocation(requestDto.location());
+        match.setMaxPlayers(requestDto.maxPlayers());
         match.setCreatedBy(user);
 
         matchRepository.save(match);
