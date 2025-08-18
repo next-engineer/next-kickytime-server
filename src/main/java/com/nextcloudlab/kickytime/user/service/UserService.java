@@ -2,13 +2,13 @@ package com.nextcloudlab.kickytime.user.service;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.nextcloudlab.kickytime.user.dto.UserDto;
 import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.repository.UserRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -45,7 +45,7 @@ public class UserService {
                         });
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UserDto getByCognitoSub(String cognitoSub) {
         User me =
                 userRepository
