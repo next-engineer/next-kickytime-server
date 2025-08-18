@@ -1,5 +1,6 @@
 package com.nextcloudlab.kickytime.user.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -11,15 +12,11 @@ import com.nextcloudlab.kickytime.util.CognitoUserInfoClient;
 
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
     private final CognitoUserInfoClient userInfoClient;
-
-    public UserController(UserService userService, CognitoUserInfoClient userInfoClient) {
-        this.userService = userService;
-        this.userInfoClient = userInfoClient;
-    }
 
     @PostMapping("/signin-up")
     public User signInUp(@AuthenticationPrincipal Jwt accessToken) {
