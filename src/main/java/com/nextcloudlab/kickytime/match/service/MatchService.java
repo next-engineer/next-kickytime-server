@@ -16,7 +16,6 @@ import com.nextcloudlab.kickytime.match.entity.MatchParticipant;
 import com.nextcloudlab.kickytime.match.entity.MatchStatus;
 import com.nextcloudlab.kickytime.match.repository.MatchParticipantRepository;
 import com.nextcloudlab.kickytime.match.repository.MatchRepository;
-import com.nextcloudlab.kickytime.user.entity.RoleEnum;
 import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.repository.UserRepository;
 

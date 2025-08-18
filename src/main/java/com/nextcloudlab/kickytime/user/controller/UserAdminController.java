@@ -4,16 +4,12 @@ import static org.springframework.http.HttpStatus.*;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.nextcloudlab.kickytime.user.entity.RoleEnum;
-import com.nextcloudlab.kickytime.user.repository.UserRepository;
 import com.nextcloudlab.kickytime.user.service.CognitoBackfillService;
 
 import lombok.RequiredArgsConstructor;

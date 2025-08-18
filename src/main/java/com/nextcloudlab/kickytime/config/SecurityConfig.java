@@ -43,10 +43,12 @@ public class SecurityConfig {
                                         .anyRequest()
                                         .permitAll())
                 .oauth2ResourceServer(
-                        oauth2 -> oauth2.jwt(jwt -> jwt
-                                .decoder(accessTokenDecoder())
-                                .jwtAuthenticationConverter(jwtAuthConverter)
-                        ))
+                        oauth2 ->
+                                oauth2.jwt(
+                                        jwt ->
+                                                jwt.decoder(accessTokenDecoder())
+                                                        .jwtAuthenticationConverter(
+                                                                jwtAuthConverter)))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable);
         return http.build();
