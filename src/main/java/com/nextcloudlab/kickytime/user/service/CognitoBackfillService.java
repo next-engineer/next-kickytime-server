@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.repository.UserRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
@@ -24,10 +24,12 @@ public class CognitoBackfillService {
     @Value("${app.cognito.user-pool-id}")
     private String userPoolId;
 
+    @Transactional(readOnly = true)
     public BackfillReport backfillAllUsers() {
         return backfillReport();
     }
 
+    @Transactional
     public BackfillReport backfillReport() {
         int processed = 0, created = 0, updated = 0;
 
