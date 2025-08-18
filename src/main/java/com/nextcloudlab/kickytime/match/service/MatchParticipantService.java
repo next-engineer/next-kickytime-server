@@ -47,6 +47,6 @@ public class MatchParticipantService {
 
     private boolean isCompleted(MyMatchesResponse.MatchInfo match) {
         return match.matchStatus() == MatchStatus.CLOSED
-                || match.matchStatus() == MatchStatus.CANCELLED;
+                || match.matchStatus() == MatchStatus.CANCELED;
     }
 }
