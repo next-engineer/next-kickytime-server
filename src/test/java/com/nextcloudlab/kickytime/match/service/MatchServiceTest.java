@@ -70,11 +70,8 @@ class MatchServiceTest {
         testMatch.setCreatedBy(adminUser);
 
         // 경기 생성 요청 DTO
-        createRequestDto = new MatchCreateRequestDto();
-        createRequestDto.setCreatedBy(1L);
-        createRequestDto.setMatchDateTime(LocalDateTime.now().plusDays(1));
-        createRequestDto.setLocation("서울 강남구");
-        createRequestDto.setMaxPlayers(10);
+        createRequestDto =
+                new MatchCreateRequestDto(1L, LocalDateTime.now().plusDays(1), "서울 강남구", 10);
     }
 
     @Test
@@ -89,8 +86,8 @@ class MatchServiceTest {
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(testMatch.getId());
-        assertThat(result.get(0).getLocation()).isEqualTo(testMatch.getLocation());
+        assertThat(result.get(0).id()).isEqualTo(testMatch.getId());
+        assertThat(result.get(0).location()).isEqualTo(testMatch.getLocation());
         verify(matchRepository).findAllByOrderByMatchDateTimeDesc();
     }
 
@@ -124,11 +121,15 @@ class MatchServiceTest {
     @Test
     @DisplayName("경기 개설 - 관리자 권한 없음 예외")
     void createMatchNotAdminUser() {
-        // given
-        createRequestDto.setCreatedBy(2L);
+        // createRequestDto는 setter가 없으므로 새로운 인스턴스 생성
+        createRequestDto =
+                new MatchCreateRequestDto(
+                        2L,
+                        createRequestDto.matchDateTime(),
+                        createRequestDto.location(),
+                        createRequestDto.maxPlayers());
         given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
 
-        // when & then
         assertThatThrownBy(() -> matchService.createMatch(createRequestDto))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("관리자 권한이 있는 사용자만 경기를 개설할 수 있습니다.");

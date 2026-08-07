@@ -42,7 +42,7 @@ class MatchParticipantServiceTest {
                         createMatchInfo(1L, MatchStatus.OPEN),
                         createMatchInfo(2L, MatchStatus.FULL),
                         createMatchInfo(3L, MatchStatus.CLOSED),
-                        createMatchInfo(4L, MatchStatus.CANCELLED),
+                        createMatchInfo(4L, MatchStatus.CANCELED),
                         createMatchInfo(5L, MatchStatus.OPEN),
                         createMatchInfo(6L, MatchStatus.CLOSED));
 
@@ -51,7 +51,7 @@ class MatchParticipantServiceTest {
                 Arrays.asList(
                         createMatchInfoWithDetails(3L, MatchStatus.OPEN, "서울 OO풋살장 A코트", 10),
                         createMatchInfoWithDetails(4L, MatchStatus.CLOSED, "부산 XX풋살파크 B코트", 8),
-                        createMatchInfoWithDetails(5L, MatchStatus.CANCELLED, "인천 YY스타디움 C코트", 12));
+                        createMatchInfoWithDetails(5L, MatchStatus.CANCELED, "인천 YY스타디움 C코트", 12));
     }
 
     @Test
@@ -71,7 +71,7 @@ class MatchParticipantServiceTest {
         MyMatchesResponse.Summary summary = result.summary();
         assertThat(summary.totalCount()).isEqualTo(6L);
         assertThat(summary.upcomingCount()).isEqualTo(3L); // OPEN(2) + FULL(1)
-        assertThat(summary.completedCount()).isEqualTo(3L); // CLOSED(2) + CANCELLED(1)
+        assertThat(summary.completedCount()).isEqualTo(3L); // CLOSED(2) + CANCELED(1)
     }
 
     @Test
@@ -135,15 +135,15 @@ class MatchParticipantServiceTest {
     }
 
     @Test
-    @DisplayName("CANCELLED 상태만 있는 경우")
-    void getMyParticipantWithOnlyCancelledMatchesShouldReturnCorrectCounts() {
+    @DisplayName("CANCELED 상태만 있는 경우")
+    void getMyParticipantWithOnlyCanceledMatchesShouldReturnCorrectCounts() {
         // given
-        List<MyMatchesResponse.MatchInfo> cancelledMatches =
+        List<MyMatchesResponse.MatchInfo> canceledMatches =
                 Arrays.asList(
-                        createMatchInfo(1L, MatchStatus.CANCELLED),
-                        createMatchInfo(2L, MatchStatus.CANCELLED));
+                        createMatchInfo(1L, MatchStatus.CANCELED),
+                        createMatchInfo(2L, MatchStatus.CANCELED));
         when(matchParticipantRepository.findMatchParticipantByUserId(testCognitoSub))
-                .thenReturn(cancelledMatches);
+                .thenReturn(canceledMatches);
 
         // when
         MyMatchesResponse result = matchParticipantService.getMyParticipant(testCognitoSub);
@@ -208,7 +208,7 @@ class MatchParticipantServiceTest {
     @Test
     @DisplayName("실제 데이터 시나리오 - SQL 기반 매치 참가자 조회")
     void getMyParticipantRealWorldScenarioShouldReturnCorrectCounts() {
-        // given - user_id 3이 참가한 매치들 (OPEN, CLOSED, CANCELLED)
+        // given - user_id 3이 참가한 매치들 (OPEN, CLOSED, CANCELED)
         when(matchParticipantRepository.findMatchParticipantByUserId(testCognitoSub))
                 .thenReturn(realWorldMatches);
 
@@ -222,7 +222,7 @@ class MatchParticipantServiceTest {
         MyMatchesResponse.Summary summary = result.summary();
         assertThat(summary.totalCount()).isEqualTo(3L);
         assertThat(summary.upcomingCount()).isEqualTo(1L); // OPEN(1)
-        assertThat(summary.completedCount()).isEqualTo(2L); // CLOSED(1) + CANCELLED(1)
+        assertThat(summary.completedCount()).isEqualTo(2L); // CLOSED(1) + CANCELED(1)
 
         // 매치 상세 정보 검증
         List<MyMatchesResponse.MatchInfo> matches = result.matches();
@@ -240,7 +240,7 @@ class MatchParticipantServiceTest {
                         createMatchInfoWithDetails(1L, MatchStatus.OPEN, "서울 OO풋살장 A코트", 10),
                         createMatchInfoWithDetails(2L, MatchStatus.FULL, "서울 OO풋살장 B코트", 8),
                         createMatchInfoWithDetails(3L, MatchStatus.CLOSED, "부산 XX풋살파크 A코트", 12),
-                        createMatchInfoWithDetails(4L, MatchStatus.CANCELLED, "인천 YY스타디움 C코트", 16));
+                        createMatchInfoWithDetails(4L, MatchStatus.CANCELED, "인천 YY스타디움 C코트", 16));
 
         when(matchParticipantRepository.findMatchParticipantByUserId(testCognitoSub))
                 .thenReturn(locationMatches);
@@ -251,7 +251,7 @@ class MatchParticipantServiceTest {
         // then
         assertThat(result.summary().totalCount()).isEqualTo(4L);
         assertThat(result.summary().upcomingCount()).isEqualTo(2L); // OPEN + FULL
-        assertThat(result.summary().completedCount()).isEqualTo(2L); // CLOSED + CANCELLED
+        assertThat(result.summary().completedCount()).isEqualTo(2L); // CLOSED + CANCELED
 
         // 서울 지역 매치가 2개인지 확인
         long seoulMatches =
@@ -286,13 +286,13 @@ class MatchParticipantServiceTest {
     @Test
     @DisplayName("시간 기반 매치 상태 검증 - 과거/미래 매치")
     void getMyParticipantTimeBasedMatchesShouldProcessCorrectly() {
-        // given - 시간 관련 특성을 가진 매치들 (과거 날짜는 CLOSED/CANCELLED, 미래 날짜는 OPEN/FULL)
+        // given - 시간 관련 특성을 가진 매치들 (과거 날짜는 CLOSED/CANCELED, 미래 날짜는 OPEN/FULL)
         List<MyMatchesResponse.MatchInfo> timeBasedMatches =
                 Arrays.asList(
                         createMatchInfoWithDetails(
                                 1L, MatchStatus.CLOSED, "과거 매치 1", 10), // 과거 - 종료됨
                         createMatchInfoWithDetails(
-                                2L, MatchStatus.CANCELLED, "취소된 매치", 8), // 과거 - 취소됨
+                                2L, MatchStatus.CANCELED, "취소된 매치", 8), // 과거 - 취소됨
                         createMatchInfoWithDetails(3L, MatchStatus.OPEN, "미래 매치 1", 12), // 미래 - 모집중
                         createMatchInfoWithDetails(
                                 4L, MatchStatus.FULL, "미래 매치 2", 10), // 미래 - 모집완료
@@ -308,7 +308,7 @@ class MatchParticipantServiceTest {
         // then
         assertThat(result.summary().totalCount()).isEqualTo(5L);
         assertThat(result.summary().upcomingCount()).isEqualTo(3L); // OPEN(2) + FULL(1)
-        assertThat(result.summary().completedCount()).isEqualTo(2L); // CLOSED(1) + CANCELLED(1)
+        assertThat(result.summary().completedCount()).isEqualTo(2L); // CLOSED(1) + CANCELED(1)
     }
 
     // 테스트 헬퍼 메서드
@@ -332,7 +332,7 @@ class MatchParticipantServiceTest {
         LocalDateTime matchTime =
                 switch (status) {
                     case OPEN, FULL -> baseTime.plusDays(2); // 미래 매치
-                    case CLOSED, CANCELLED -> baseTime.minusDays(1); // 과거 매치
+                    case CLOSED, CANCELED -> baseTime.minusDays(1); // 과거 매치
                 };
 
         return new MyMatchesResponse.MatchInfo(

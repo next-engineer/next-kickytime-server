@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nextcloudlab.kickytime.match.dto.MatchCreateRequestDto;
 import com.nextcloudlab.kickytime.match.dto.MatchResponseDto;
@@ -18,10 +19,7 @@ import com.nextcloudlab.kickytime.user.entity.RoleEnum;
 import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.repository.UserRepository;
 
-import jakarta.transaction.Transactional;
-
 @Service
-@Transactional
 public class MatchService {
 
     private final MatchRepository matchRepository;
@@ -38,18 +36,19 @@ public class MatchService {
     }
 
     // 전체 경기 목록 조회
-    @Transactional()
+    @Transactional(readOnly = true)
     public List<MatchResponseDto> getAllMatches() {
         List<Match> matches = matchRepository.findAllByOrderByMatchDateTimeDesc();
 
-        return matches.stream().map(MatchResponseDto::new).collect(Collectors.toList());
+        return matches.stream().map(MatchResponseDto::from).collect(Collectors.toList());
     }
 
     // 경기 개설
+    @Transactional
     public void createMatch(MatchCreateRequestDto requestDto) {
         User user =
                 userRepository
-                        .findById(requestDto.getCreatedBy())
+                        .findById(requestDto.createdBy())
                         .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         if (user.getRole() != RoleEnum.ADMIN) {
@@ -58,15 +57,16 @@ public class MatchService {
 
         Match match = new Match();
         match.setMatchStatus(MatchStatus.OPEN);
-        match.setMatchDateTime(requestDto.getMatchDateTime());
-        match.setLocation(requestDto.getLocation());
-        match.setMaxPlayers(requestDto.getMaxPlayers());
+        match.setMatchDateTime(requestDto.matchDateTime());
+        match.setLocation(requestDto.location());
+        match.setMaxPlayers(requestDto.maxPlayers());
         match.setCreatedBy(user);
 
         matchRepository.save(match);
     }
 
     // 경기 참여 신청
+    @Transactional
     public void joinMatch(Long matchId, String cognitoSub) {
         Match match =
                 matchRepository
@@ -105,6 +105,7 @@ public class MatchService {
     }
 
     // 경기 참여 취소(일반회원)
+    @Transactional
     public void leaveMatch(Long matchId, String cognitoSub) {
         Match match =
                 matchRepository
@@ -125,6 +126,7 @@ public class MatchService {
     }
 
     // 매치 삭제 기능
+    @Transactional
     public void deleteMatchById(Long matchId) {
         if (!matchRepository.existsById(matchId)) {
             throw new IllegalArgumentException("해당 매치를 찾을 수 없습니다.");

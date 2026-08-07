@@ -13,11 +13,11 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MatchParticipantService {
 
     private final MatchParticipantRepository matchParticipantRepository;
 
+    @Transactional(readOnly = true)
     public MyMatchesResponse getMyParticipant(String cognitoSub) {
 
         List<MyMatchesResponse.MatchInfo> matches =
@@ -47,6 +47,6 @@ public class MatchParticipantService {
 
     private boolean isCompleted(MyMatchesResponse.MatchInfo match) {
         return match.matchStatus() == MatchStatus.CLOSED
-                || match.matchStatus() == MatchStatus.CANCELLED;
+                || match.matchStatus() == MatchStatus.CANCELED;
     }
 }

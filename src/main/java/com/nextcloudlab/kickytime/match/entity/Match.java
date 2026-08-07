@@ -4,8 +4,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import com.nextcloudlab.kickytime.common.entity.BaseEntity;
 import com.nextcloudlab.kickytime.user.entity.User;
 
@@ -21,7 +19,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "matches")
 public class Match extends BaseEntity {
     @Id
@@ -32,7 +29,6 @@ public class Match extends BaseEntity {
     @Column(nullable = false)
     private MatchStatus matchStatus;
 
-    //    @Future(message = "경기 일시는 현재보다 미래여야 합니다.")
     @Column(nullable = false)
     private LocalDateTime matchDateTime;
 

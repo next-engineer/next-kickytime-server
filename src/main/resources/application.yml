@@ -23,7 +23,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_xI18xw5er}
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_4eeAfg0rE}
 
 # Spring Boot Actuator 설정
 management:
@@ -41,9 +41,9 @@ management:
 app:
   cognito:
     region: ${COGNITO_REGION:ap-northeast-2}
-    user-pool-id: ${COGNITO_USER_POOL_ID:ap-northeast-2_xI18xw5er}
-    client-id: ${COGNITO_CLIENT_ID:6l5ovdmof4vc5r2socegk41gt4}
-    user-info-uri: ${COGNITO_USER_INFO_URI:https://ap-northeast-2xi18xw5er.auth.ap-northeast-2.amazoncognito.com/oauth2/userInfo}
+    user-pool-id: ${COGNITO_USER_POOL_ID:ap-northeast-2_4eeAfg0rE}
+    client-id: ${COGNITO_CLIENT_ID:6ig8qk7cas8rajhqjcduvf6iqd}
+    user-info-uri: ${COGNITO_USER_INFO_URI:https://ap-northeast-24eeafg0re.auth.ap-northeast-2.amazoncognito.com/oauth2/userInfo}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
@@ -63,4 +63,3 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
   packages-to-scan: com.nextcloudlab.kickytime
-  
