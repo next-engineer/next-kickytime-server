@@ -59,11 +59,23 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Describe current Task Definition
+      - name: Describe Task Definition currently serving production
         if: steps.gate.outputs.GO == 'true'
         run: |
+          CURRENT_TD_ARN=$(aws ecs describe-services \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "${{ env.ECS_SERVICE }}" \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+          if [ -z "$CURRENT_TD_ARN" ] || [ "$CURRENT_TD_ARN" = "None" ]; then
+            echo "Unable to resolve the task definition currently used by the ECS service."
+            exit 1
+          fi
+
+          echo "Using production task definition as deployment base: $CURRENT_TD_ARN"
           aws ecs describe-task-definition \
-            --task-definition "${{ env.TASK_FAMILY }}" \
+            --task-definition "$CURRENT_TD_ARN" \
             --query 'taskDefinition' > td.json
 
       - name: Patch image & ensure ARM64 platform
@@ -96,23 +108,35 @@ jobs:
 
       - name: Wait for deployment (timeout 10m)
         if: steps.gate.outputs.GO == 'true'
-        id: wait
-        continue-on-error: true
         run: |
           timeout 600 aws ecs wait services-stable \
             --cluster "${{ env.ECS_CLUSTER }}" \
-            --services "${{ env.ECS_SERVICE }}" || echo "WAIT_FAILED=true" >> $GITHUB_OUTPUT
+            --services "${{ env.ECS_SERVICE }}"
+
+      - name: Verify the new Task Definition is serving production
+        if: steps.gate.outputs.GO == 'true'
+        run: |
+          EXPECTED_TD_ARN="${{ steps.register.outputs.TASK_DEF_ARN }}"
+          ACTIVE_TD_ARN=$(aws ecs describe-services \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "${{ env.ECS_SERVICE }}" \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+          if [ "$ACTIVE_TD_ARN" != "$EXPECTED_TD_ARN" ]; then
+            echo "ECS deployment did not become production. The deployment may have rolled back."
+            echo "Expected: $EXPECTED_TD_ARN"
+            echo "Active:   $ACTIVE_TD_ARN"
+            exit 1
+          fi
+
+          echo "Verified production task definition: $ACTIVE_TD_ARN"
 
       - name: Summary
         if: steps.gate.outputs.GO == 'true'
         run: |
-          if [ "${{ steps.wait.outputs.WAIT_FAILED }}" == "true" ]; then
-            echo "### ❌ ECS Deploy Failed" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          else
-            echo "### ✅ ECS Deploy Completed (ARM64)" >> $GITHUB_STEP_SUMMARY
-            echo "- Cluster: \`${{ env.ECS_CLUSTER }}\`"
-            echo "- Service: \`${{ env.ECS_SERVICE }}\`"
-            echo "- TD: \`${{ steps.register.outputs.TASK_DEF_ARN }}\`"
-            echo "- Image: \`${PAYLOAD_IMAGE_URI}\`"
-          fi
+          echo "### ✅ ECS Deploy Completed (ARM64)" >> $GITHUB_STEP_SUMMARY
+          echo "- Cluster: \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Service: \`${{ env.ECS_SERVICE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- TD: \`${{ steps.register.outputs.TASK_DEF_ARN }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: \`${PAYLOAD_IMAGE_URI}\`" >> $GITHUB_STEP_SUMMARY
