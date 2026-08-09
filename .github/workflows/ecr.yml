@@ -101,21 +101,12 @@ jobs:
           branch="${{ github.ref_name }}"
           sha="${{ github.sha }}"
 
-          # ECS 배포는 EC2 -> ECS 전환 단계에서 다시 활성화한다.
-          # resp=$(curl -s -o /tmp/resp.txt -w "%{http_code}" -X POST \
-          #   "https://api.github.com/repos/${{ github.repository }}/dispatches" \
-          #   -H "Accept: application/vnd.github+json" \
-          #   -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          #   -d "{\"event_type\":\"deploy-ecs\",\"client_payload\":{\"image_uri\":\"$image_uri\",\"tag\":\"$tag\",\"branch\":\"$branch\",\"sha\":\"$sha\"}}")
-          # [ "$resp" = "204" ] || (echo "ECS dispatch failed:" && cat /tmp/resp.txt && exit 1)
-
-          # EC2
-          resp2=$(curl -s -o /tmp/resp2.txt -w "%{http_code}" -X POST \
+          resp=$(curl -s -o /tmp/resp.txt -w "%{http_code}" -X POST \
             "https://api.github.com/repos/${{ github.repository }}/dispatches" \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -d "{\"event_type\":\"deploy-ec2\",\"client_payload\":{\"image_uri\":\"$image_uri\",\"tag\":\"$tag\",\"branch\":\"$branch\",\"sha\":\"$sha\"}}")
-          [ "$resp2" = "204" ] || (echo "EC2 dispatch failed:" && cat /tmp/resp2.txt && exit 1)
+            -d "{\"event_type\":\"deploy-ecs\",\"client_payload\":{\"image_uri\":\"$image_uri\",\"tag\":\"$tag\",\"branch\":\"$branch\",\"sha\":\"$sha\"}}")
+          [ "$resp" = "204" ] || (echo "ECS dispatch failed:" && cat /tmp/resp.txt && exit 1)
 
       - name: Summary
         run: |
@@ -124,5 +115,4 @@ jobs:
           echo "- Tag:    \`${{ steps.tag.outputs.TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Image:  \`${{ steps.build.outputs.IMAGE_URI }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Arch:   \`linux/arm64\`" >> $GITHUB_STEP_SUMMARY
-          # echo "- Sent:   \`repository_dispatch: deploy-ecs\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Sent:   \`repository_dispatch: deploy-ec2\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Sent:   \`repository_dispatch: deploy-ecs\`" >> $GITHUB_STEP_SUMMARY
