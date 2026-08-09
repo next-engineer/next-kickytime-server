@@ -11,4 +11,4 @@ spring:
 
 app:
   cors:
-    allowed-origins: "https://kickytime.nextcloudlab.com"
+    allowed-origins: "https://d2hk3a4qv3wwww.cloudfront.net"
