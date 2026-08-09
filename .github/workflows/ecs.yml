@@ -16,9 +16,9 @@ env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: kickytime-repo
   ECS_CLUSTER: kickytime-cluster
-  ECS_SERVICE: kickytime-task-service
+  ECS_SERVICE: kickytime-service
   TASK_FAMILY: kickytime-task
-  CONTAINER_NAME: kickytime-ecr
+  CONTAINER_NAME: kickytime
 
 jobs:
   deploy:
@@ -85,7 +85,7 @@ jobs:
             --output text)
           echo "TASK_DEF_ARN=$NEW_TD_ARN" >> $GITHUB_OUTPUT
 
-      - name: Update service (rolling deployment)
+      - name: Update service (ECS blue/green deployment)
         if: steps.gate.outputs.GO == 'true'
         run: |
           aws ecs update-service \
