@@ -9,17 +9,15 @@ import com.nextcloudlab.kickytime.user.entity.User;
 import com.nextcloudlab.kickytime.user.service.UserService;
 import com.nextcloudlab.kickytime.util.CognitoUserInfoClient;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
     private final CognitoUserInfoClient userInfoClient;
-
-    public UserController(UserService userService, CognitoUserInfoClient userInfoClient) {
-        this.userService = userService;
-        this.userInfoClient = userInfoClient;
-    }
 
     @PostMapping("/signin-up")
     public User signInUp(@AuthenticationPrincipal Jwt accessToken) {

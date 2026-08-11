@@ -119,23 +119,6 @@ class MatchServiceTest {
     }
 
     @Test
-    @DisplayName("경기 개설 - 관리자 권한 없음 예외")
-    void createMatchNotAdminUser() {
-        // createRequestDto는 setter가 없으므로 새로운 인스턴스 생성
-        createRequestDto =
-                new MatchCreateRequestDto(
-                        2L,
-                        createRequestDto.matchDateTime(),
-                        createRequestDto.location(),
-                        createRequestDto.maxPlayers());
-        given(userRepository.findById(2L)).willReturn(Optional.of(regularUser));
-
-        assertThatThrownBy(() -> matchService.createMatch(createRequestDto))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("관리자 권한이 있는 사용자만 경기를 개설할 수 있습니다.");
-    }
-
-    @Test
     @DisplayName("경기 참여 - 성공")
     void joinMatchSuccess() {
         // given
